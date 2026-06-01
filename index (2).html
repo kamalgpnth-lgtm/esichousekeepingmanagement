@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#1e40af"/>
+<title>Housekeeping Management — ESIC KK Nagar</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:-webkit-fill-available}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#f1f5f9;color:#0f172a;-webkit-font-smoothing:antialiased;min-height:100vh}
+button{font-family:inherit;cursor:pointer}
+button:active{transform:scale(.97);opacity:.9}
+input,select,textarea{font-family:inherit;font-size:16px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#3b82f6!important;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+.screen{display:none;min-height:100vh;animation:fadeIn .2s ease}
+.screen.active{display:flex;flex-direction:column}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── SETUP SCREEN ─── */
+#s-setup{background:linear-gradient(135deg,#0f172a,#1e3a8a);align-items:center;justify-content:center;padding:24px;min-height:100vh}
+.setup-card{background:rgba(255,255,255,.06);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:36px 32px;width:100%;max-width:480px;box-shadow:0 24px 64px rgba(0,0,0,.4)}
+.setup-logo{font-size:40px;text-align:center;margin-bottom:12px}
+.setup-title{font-size:22px;font-weight:800;color:#fff;text-align:center;margin-bottom:4px}
+.setup-sub{font-size:13px;color:rgba(255,255,255,.5);text-align:center;margin-bottom:28px;line-height:1.6}
+.setup-step{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;margin-bottom:12px}
+.setup-step-num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#3b82f6;border-radius:50%;font-size:12px;font-weight:800;color:#fff;margin-right:8px;flex-shrink:0}
+.setup-step-title{font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;margin-bottom:8px}
+.setup-inp{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:10px 12px;color:#fff;font-family:inherit;font-size:14px;outline:none;transition:border-color .15s;margin-top:6px}
+.setup-inp::placeholder{color:rgba(255,255,255,.3)}
+.setup-inp:focus{border-color:#3b82f6;background:rgba(255,255,255,.12)}
+.setup-hint{font-size:11px;color:rgba(255,255,255,.4);margin-top:5px;line-height:1.5}
+.btn-setup{width:100%;background:linear-gradient(135deg,#2563eb,#0ea5e9);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;margin-top:16px;transition:opacity .15s}
+.btn-setup:hover{opacity:.92}
+.setup-err{background:rgba(220,38,38,.2);border:1px solid rgba(220,38,38,.3);border-radius:8px;padding:10px 12px;color:#fca5a5;font-size:13px;margin-top:12px;display:none}
+.setup-err.show{display:block}
+.copy-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;margin-left:6px}
+
+/* ─── LOGIN ─── */
+#s-login{background:linear-gradient(135deg,#eff6ff,#dbeafe 50%,#e0f2fe);align-items:center;justify-content:center;padding:24px 16px;min-height:100vh}
+.login-card{background:#fff;border-radius:24px;padding:32px 28px;box-shadow:0 20px 60px rgba(30,64,175,.12),0 4px 16px rgba(0,0,0,.06);border:1px solid #dbeafe;width:100%;max-width:420px}
+.app-logo{width:64px;height:64px;background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;box-shadow:0 8px 24px rgba(59,130,246,.35)}
+.app-name{font-size:22px;font-weight:800;color:#0f172a;text-align:center}
+.app-sub{font-size:13px;color:#64748b;text-align:center;margin-top:4px;margin-bottom:28px}
+.lbl{display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px}
+.inp{width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px 14px;font-size:15px;color:#0f172a;background:#fff;-webkit-appearance:none;transition:border-color .15s}
+.field{margin-bottom:16px}
+.btn-login{width:100%;background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;margin-top:8px;transition:opacity .15s}
+.btn-login:hover{opacity:.93}
+.err-box{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;color:#dc2626;font-size:13px;margin-bottom:14px;display:none}
+.err-box.show{display:block}
+
+/* ─── APP SHELL ─── */
+.topbar{background:#fff;border-bottom:1px solid #e2e8f0;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:60;flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-icon{width:36px;height:36px;background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:800;color:#0f172a}
+.topbar-sub{font-size:11px;color:#94a3b8;margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.role-pill{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.role-master{background:#ede9fe;color:#7c3aed}
+.role-supervisor{background:#dcfce7;color:#15803d}
+.user-pill{font-size:12px;color:#64748b;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-logout{background:#f8fafc;border:1.5px solid #e2e8f0;color:#64748b;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;transition:all .15s}
+.btn-logout:hover{border-color:#ef4444;color:#ef4444}
+.app-content{flex:1;overflow-y:auto;padding:24px 20px}
+.max-w{max-width:1200px;margin:0 auto}
+
+/* ─── TABS ─── */
+.tabs-nav{display:flex;flex-wrap:wrap;gap:4px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:5px;margin-bottom:24px}
+.tab-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border:none;border-radius:8px;background:transparent;color:#64748b;font-size:13px;font-weight:600;transition:all .15s;white-space:nowrap}
+.tab-btn:hover{background:#f1f5f9;color:#0f172a}
+.tab-btn.active{background:#1e40af;color:#fff;box-shadow:0 2px 8px rgba(30,64,175,.3)}
+.tab-panel{display:none}
+.tab-panel.active{display:block;animation:fadeIn .2s ease}
+
+/* ─── CARDS ─── */
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden}
+.card-hd{padding:20px 22px 16px;border-bottom:1px solid #f1f5f9;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.card-title{font-size:16px;font-weight:800;color:#0f172a}
+.card-desc{font-size:13px;color:#64748b;margin-top:3px}
+.card-body{padding:22px}
+.card-hd-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* ─── BUTTONS ─── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;border:none;transition:all .15s;cursor:pointer;white-space:nowrap}
+.btn-primary{background:#1e40af;color:#fff}
+.btn-primary:hover{background:#1d3a9e}
+.btn-outline{background:#fff;border:1.5px solid #e2e8f0;color:#475569}
+.btn-outline:hover{border-color:#3b82f6;color:#1e40af}
+.btn-danger{background:#fef2f2;border:1.5px solid #fecaca;color:#dc2626}
+.btn-danger:hover{background:#fee2e2}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-xs{padding:4px 8px;font-size:11px;border-radius:6px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ─── TABLE ─── */
+.tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid #f1f5f9}
+table{width:100%;border-collapse:collapse}
+thead{background:#f8fafc}
+th{padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#64748b;text-align:left;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+td{padding:12px 14px;font-size:13px;color:#1e293b;border-bottom:1px solid #f1f5f9}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#f8fafc}
+
+/* ─── FORMS ─── */
+.form-grid{display:grid;gap:14px}
+.form-grid-2{grid-template-columns:1fr 1fr}
+.form-grid-3{grid-template-columns:1fr 1fr 1fr}
+.form-field{display:flex;flex-direction:column;gap:5px}
+.form-field label{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.6px}
+.form-field input,.form-field select,.form-field textarea{border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;color:#0f172a;background:#fff;width:100%}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.12);outline:none}
+.form-bg{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px;margin-bottom:16px}
+
+/* ─── BADGES ─── */
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-blue{background:#dbeafe;color:#1d4ed8}
+.badge-green{background:#dcfce7;color:#15803d}
+.badge-amber{background:#fef3c7;color:#b45309}
+.badge-red{background:#fee2e2;color:#dc2626}
+.badge-purple{background:#ede9fe;color:#7c3aed}
+.badge-gray{background:#f1f5f9;color:#475569;font-family:'JetBrains Mono',monospace}
+
+/* ─── STATS ─── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px 20px}
+.stat-val{font-size:28px;font-weight:800;line-height:1;margin:4px 0}
+.stat-lbl{font-size:12px;color:#64748b;font-weight:500}
+.stat-blue .stat-val{color:#3b82f6}
+.stat-green .stat-val{color:#16a34a}
+.stat-amber .stat-val{color:#d97706}
+.stat-red .stat-val{color:#dc2626}
+
+/* ─── ALERTS ─── */
+.alert{padding:11px 14px;border-radius:8px;font-size:13px;line-height:1.5;margin-bottom:14px}
+.alert-err{background:#fef2f2;border:1px solid #fecaca;color:#dc2626}
+.alert-ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d}
+.alert-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.alert-warn{background:#fffbeb;border:1px solid #fde68a;color:#b45309}
+.g-alert{position:fixed;top:68px;left:50%;transform:translateX(-50%);z-index:999;min-width:260px;max-width:90vw;box-shadow:0 4px 24px rgba(0,0,0,.15);display:none;border-radius:8px}
+.g-alert.show{display:block;animation:fadeIn .2s ease}
+
+/* ─── MODALS ─── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-bg.open{display:flex;animation:fadeIn .15s ease}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.2)}
+@keyframes slideUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-hd{padding:20px 24px 16px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:16px;font-weight:800}
+.modal-body{padding:20px 24px}
+.modal-ft{padding:16px 24px;border-top:1px solid #f1f5f9;display:flex;gap:8px;justify-content:flex-end}
+.btn-close{background:none;border:none;font-size:20px;color:#94a3b8;padding:2px 6px;cursor:pointer;border-radius:4px;line-height:1}
+
+/* ─── SUP MENU ─── */
+.sup-menu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+.sup-menu-card{background:#fff;border:2px solid #e2e8f0;border-radius:16px;padding:28px 16px;text-align:center;cursor:pointer;transition:all .2s}
+.sup-menu-card:hover{border-color:#3b82f6;box-shadow:0 4px 24px rgba(59,130,246,.12);transform:translateY(-2px)}
+.sup-menu-card.active{border-color:#1e40af;background:#eff6ff}
+.sup-menu-icon{font-size:34px;margin-bottom:10px}
+.sup-menu-title{font-size:15px;font-weight:800;color:#0f172a}
+.sup-menu-sub{font-size:12px;color:#64748b;margin-top:3px}
+
+/* ─── QR ─── */
+.qr-video-wrap{position:relative;width:100%;max-width:400px;margin:0 auto;border-radius:16px;overflow:hidden;background:#000}
+.qr-video-wrap video{width:100%;display:block}
+.qr-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.qr-frame{width:220px;height:220px;border:3px solid #3b82f6;border-radius:16px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);position:relative}
+.scan-line{position:absolute;width:200px;height:3px;background:linear-gradient(90deg,transparent,#3b82f6,transparent);animation:scanLine 2s ease-in-out infinite;border-radius:2px;left:7px}
+@keyframes scanLine{0%{top:20%}50%{top:78%}100%{top:20%}}
+
+/* ─── MISC ─── */
+.sep{height:1px;background:#f1f5f9;margin:20px 0}
+.empty{text-align:center;padding:48px 20px;color:#94a3b8}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty-text{font-size:14px;color:#64748b}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-size:14px;color:#64748b;display:none}
+.loading-overlay.show{display:flex}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi-box{padding:16px;border-radius:10px;border:1px solid}
+.kpi-val{font-size:24px;font-weight:800;line-height:1}
+.kpi-lbl{font-size:11px;font-weight:600;margin-top:4px}
+.mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}.mb-3{margin-bottom:12px}.mb-4{margin-bottom:16px}
+.flex{display:flex}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-2{gap:8px}.gap-3{gap:12px}
+.w-full{width:100%}.text-sm{font-size:13px}.text-xs{font-size:11px}.text-muted{color:#64748b}.text-center{text-align:center}.font-bold{font-weight:700}
+.chart-box{border:1px solid #f1f5f9;border-radius:12px;padding:18px}
+.chart-title{font-size:14px;font-weight:700;margin-bottom:14px;color:#0f172a}
+.checkbox-row{display:flex;align-items:center;gap:8px;padding:6px 0}
+.checkbox-row input[type=checkbox]{width:16px;height:16px;accent-color:#1e40af;cursor:pointer}
+@media(max-width:640px){
+  .sup-menu-grid,.form-grid-2,.form-grid-3,.grid-2,.grid-4{grid-template-columns:1fr}
+  .stats-row{grid-template-columns:1fr 1fr}.app-content{padding:16px 12px}
+  .user-pill,.topbar-sub{display:none}.tabs-nav{gap:2px}.tab-btn{padding:7px 10px;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:32px;height:32px;border-width:3px"></div><span>Loading…</span></div>
+<div id="g-alert" class="alert g-alert"></div>
+
+<!-- ══════════ SETUP SCREEN ══════════ -->
+<div class="screen active" id="s-setup">
+  <div class="setup-card">
+    <div class="setup-logo">🧹</div>
+    <div class="setup-title">Connect to Supabase</div>
+    <div class="setup-sub">One-time setup. Your credentials are saved in your browser.<br>Follow the steps below to get your free Supabase project.</div>
+
+    <div class="setup-step">
+      <div class="setup-step-title"><span class="setup-step-num">1</span> Create a free Supabase project</div>
+      <div class="setup-hint">Go to <strong style="color:#fff">supabase.com</strong> → New Project → Choose a name & password → Wait ~2 mins for it to start.</div>
+    </div>
+
+    <div class="setup-step">
+      <div class="setup-step-title"><span class="setup-step-num">2</span> Run the database SQL</div>
+      <div class="setup-hint">In Supabase → SQL Editor → paste and run the SQL from the <strong style="color:#fff">supabase_setup.sql</strong> file included in the ZIP.</div>
+    </div>
+
+    <div class="setup-step">
+      <div class="setup-step-title"><span class="setup-step-num">3</span> Enter your Supabase credentials</div>
+      <label class="lbl" style="color:rgba(255,255,255,.6);margin-top:8px">Project URL</label>
+      <input class="setup-inp" id="sb-url" placeholder="https://xyzabc.supabase.co" type="url">
+      <label class="lbl" style="color:rgba(255,255,255,.6);margin-top:10px">Anon Public Key</label>
+      <input class="setup-inp" id="sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+      <div class="setup-hint mt-2">Find these in Supabase → Project Settings → API</div>
+    </div>
+
+    <div id="setup-err" class="setup-err"></div>
+    <button class="btn-setup" onclick="saveSetup()">Connect & Continue →</button>
+  </div>
+</div>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div class="screen" id="s-login">
+  <div class="login-card" style="margin:auto">
+    <div class="app-logo">🧹</div>
+    <div class="app-name">Housekeeping Management</div>
+    <div class="app-sub">ESIC Medical College & Hospital, KK Nagar</div>
+    <div id="login-err" class="err-box"></div>
+    <div class="field"><label class="lbl">Email Address</label>
+      <input class="inp" type="email" id="l-email" placeholder="admin@esickknagar.in" autocomplete="email">
+    </div>
+    <div class="field"><label class="lbl">Password</label>
+      <input class="inp" type="password" id="l-pass" placeholder="••••••••">
+    </div>
+    <button class="btn-login" id="login-btn" onclick="doLogin()">Sign In</button>
+    <div style="text-align:center;margin-top:14px">
+      <button onclick="resetSetup()" style="background:none;border:none;color:#94a3b8;font-size:12px;cursor:pointer">⚙️ Change Supabase settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div class="screen" id="s-app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-icon">🧹</div>
+      <div><div class="topbar-title">Housekeeping</div><div class="topbar-sub">ESIC KK Nagar</div></div>
+    </div>
+    <div class="topbar-right">
+      <span class="role-pill" id="role-pill"></span>
+      <span class="user-pill" id="user-pill"></span>
+      <button class="btn-logout" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="app-content">
+    <div class="max-w">
+
+      <!-- MASTER VIEW -->
+      <div id="view-master" style="display:none">
+        <div class="tabs-nav" id="master-tabs">
+          <button class="tab-btn active" data-tab="inventory" onclick="switchTab(this,'master')">📦 Inventory</button>
+          <button class="tab-btn" data-tab="departments" onclick="switchTab(this,'master')">🏢 Departments</button>
+          <button class="tab-btn" data-tab="staff" onclick="switchTab(this,'master')">👥 Staff</button>
+          <button class="tab-btn" data-tab="locations" onclick="switchTab(this,'master')">📍 Locations</button>
+          <button class="tab-btn" data-tab="duty" onclick="switchTab(this,'master')">📋 Duty Charts</button>
+          <button class="tab-btn" data-tab="qrlogs" onclick="switchTab(this,'master')">📊 QR Logs</button>
+          <button class="tab-btn" data-tab="issuance" onclick="switchTab(this,'master')">📤 Issuance</button>
+          <button class="tab-btn" data-tab="analytics" onclick="switchTab(this,'master')">📈 Analytics</button>
+          <button class="tab-btn" data-tab="supervisors" onclick="switchTab(this,'master')">👤 Supervisors</button>
+        </div>
+
+        <div class="tab-panel active" id="master-tab-inventory">
+          <div class="stats-row" id="inv-stats"></div>
+          <div class="card">
+            <div class="card-hd">
+              <div><div class="card-title">📦 Inventory Management</div><div class="card-desc">Manage cleaning supplies and equipment</div></div>
+              <div class="card-hd-actions">
+                <input class="inp" style="width:200px;padding:8px 12px;font-size:13px" placeholder="🔍 Search…" oninput="renderInventory(this.value)" id="inv-search">
+                <button class="btn btn-outline btn-sm" onclick="openBulkUpload('inventory')">⬆ Bulk Upload</button>
+                <button class="btn btn-outline btn-sm" onclick="downloadTemplate('inventory')">⬇ Template</button>
+                <button class="btn btn-primary btn-sm" onclick="openInvModal()">+ Add Item</button>
+              </div>
+            </div>
+            <div class="card-body" style="padding:0">
+              <div class="tbl-wrap"><table><thead><tr><th>Item Name</th><th>Quantity</th><th>Unit</th><th>Description</th><th>Actions</th></tr></thead><tbody id="inv-table"></tbody></table></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="master-tab-departments">
+          <div class="card">
+            <div class="card-hd">
+              <div><div class="card-title">🏢 Departments</div></div>
+              <div class="card-hd-actions">
+                <button class="btn btn-outline btn-sm" onclick="openBulkUpload('departments')">⬆ Bulk Upload</button>
+                <button class="btn btn-outline btn-sm" onclick="downloadTemplate('departments')">⬇ Template</button>
+                <button class="btn btn-primary btn-sm" onclick="openDeptModal()">+ Add Department</button>
+              </div>
+            </div>
+            <div class="card-body" style="padding:0">
+              <div class="tbl-wrap"><table><thead><tr><th>Department Name</th><th>Actions</th></tr></thead><tbody id="dept-table"></tbody></table></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="master-tab-staff">
+          <div class="card">
+            <div class="card-hd">
+              <div><div class="card-title">👥 Staff Members</div></div>
+              <div class="card-hd-actions">
+                <input class="inp" style="width:200px;padding:8px 12px;font-size:13px" placeholder="🔍 Search…" oninput="renderStaff(this.value)" id="staff-search">
+                <label class="flex items-center gap-2 text-sm" style="cursor:pointer;font-size:13px;color:#475569">
+                  <input type="checkbox" id="show-relievers" onchange="loadStaff()" style="width:14px;height:14px;accent-color:#1e40af"> Relievers
+                </label>
+                <button class="btn btn-outline btn-sm" onclick="openBulkUpload('staff')">⬆ Bulk Upload</button>
+                <button class="btn btn-outline btn-sm" onclick="downloadTemplate('staff')">⬇ Template</button>
+                <button class="btn btn-primary btn-sm" onclick="openStaffModal()">+ Add Staff</button>
+              </div>
+            </div>
+            <div class="card-body" style="padding:0">
+              <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Attendance ID</th><th>Designation</th><th>Department</th><th>Type</th><th>Actions</th></tr></thead><tbody id="staff-table"></tbody></table></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="master-tab-locations">
+          <div class="card">
+            <div class="card-hd">
+              <div><div class="card-title">📍 Locations & QR Codes</div><div class="card-desc">GPS-validated check-in points</div></div>
+              <div class="card-hd-actions">
+                <button class="btn btn-outline btn-sm" onclick="openQRVerifier()">📷 QR Verifier</button>
+                <button class="btn btn-primary btn-sm" onclick="openLocModal()">+ Add Location</button>
+              </div>
+            </div>
+            <div class="card-body" style="padding:0">
+              <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Latitude</th><th>Longitude</th><th>Block</th><th>QR</th><th>Actions</th></tr></thead><tbody id="loc-table"></tbody></table></div>
+            </div>
+          </div>
+          <div class="card mt-4">
+            <div class="card-hd"><div><div class="card-title">⚙️ GPS Settings</div></div></div>
+            <div class="card-body">
+              <div class="flex items-center gap-3">
+                <div class="form-field" style="max-width:200px"><label>Radius (meters)</label><input type="number" id="gps-radius" value="150" min="10"></div>
+                <button class="btn btn-primary btn-sm mt-3" onclick="saveGpsSettings()">Save</button>
+              </div>
+            </div>
+          </div>
+          <div class="card mt-4">
+            <div class="card-hd"><div><div class="card-title">🏗️ Blocks</div></div><button class="btn btn-primary btn-sm" onclick="openBlockModal()">+ Add Block</button></div>
+            <div class="card-body" style="padding:0">
+              <div class="tbl-wrap"><table><thead><tr><th>Block Name</th><th>Supervisor</th><th>Actions</th></tr></thead><tbody id="blocks-table"></tbody></table></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="master-tab-duty">
+          <div class="card">
+            <div class="card-hd">
+              <div><div class="card-title">📋 Shift Management & Daily Assignments</div></div>
+              <button class="btn btn-primary btn-sm" onclick="openShiftModal()">+ Create Shift</button>
+            </div>
+            <div class="card-body">
+              <div id="shifts-grid" class="form-grid form-grid-3 mb-4"></div>
+              <div class="sep"></div>
+              <h4 class="font-bold mb-3" style="font-size:14px">All Submitted Assignments</h4>
+              <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Shift</th><th>Supervisor</th><th>Present</th><th>Total</th><th>Submitted</th></tr></thead><tbody id="assignments-table"></tbody></table></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="master-tab-qrlogs">
+          <div class="card">
+            <div class="card-hd">
+              <div><div class="card-title">📊 QR Attendance Logs</div></div>
+              <button class="btn btn-outline btn-sm" onclick="exportQRLogs()">⬇ Export CSV</button>
+            </div>
+            <div class="card-body">
+              <div class="form-bg form-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+                <div class="form-field"><label>From</label><input type="date" id="qr-from"></div>
+                <div class="form-field"><label>To</label><input type="date" id="qr-to"></div>
+                <div class="form-field"><label>Supervisor</label><select id="qr-sup"><option value="">All</option></select></div>
+                <div class="form-field"><label>Shift</label><select id="qr-shift-filter"><option value="">All shifts</option></select></div>
+              </div>
+              <div class="flex gap-2 mb-4">
+                <button class="btn btn-primary btn-sm" onclick="loadQRLogs()">Apply Filters</button>
+                <button class="btn btn-outline btn-sm" onclick="clearQRFilters()">Clear</button>
+              </div>
+              <div class="tbl-wrap"><table><thead><tr><th>Date/Time</th><th>Supervisor</th><th>Location</th><th>Shift</th><th>GPS Status</th></tr></thead><tbody id="qr-logs-table"></tbody></table></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="master-tab-issuance">
+          <div class="card">
+            <div class="card-hd">
+              <div><div class="card-title">📤 Issuance Logs</div></div>
+              <div class="card-hd-actions">
+                <button class="btn btn-outline btn-sm" onclick="exportIssuance()">⬇ Export CSV</button>
+                <button class="btn btn-primary btn-sm" onclick="openIssuanceModal()">+ New Issuance</button>
+              </div>
+            </div>
+            <div class="card-body" style="padding:0">
+              <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Department</th><th>Items</th><th>Notes</th><th>Issued By</th></tr></thead><tbody id="issuance-table"></tbody></table></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="master-tab-analytics">
+          <div class="card">
+            <div class="card-hd"><div><div class="card-title">📈 Analytics</div></div></div>
+            <div class="card-body">
+              <div class="form-bg form-grid" style="grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+                <div class="form-field"><label>Period</label>
+                  <select id="an-period" onchange="toggleCustomDates()">
+                    <option value="month">Last 30 days</option><option value="week">Last 7 days</option>
+                    <option value="day">Today</option><option value="custom">Custom</option><option value="all">All time</option>
+                  </select>
+                </div>
+                <div class="form-field"><label>Department</label><select id="an-dept"><option value="all">All departments</option></select></div>
+                <div class="form-field"><label>Item</label><select id="an-item"><option value="all">All items</option></select></div>
+                <div class="form-field" id="an-from-wrap" style="display:none"><label>From</label><input type="date" id="an-from"></div>
+                <div class="form-field" id="an-to-wrap" style="display:none"><label>To</label><input type="date" id="an-to"></div>
+                <div class="form-field" style="justify-content:flex-end;padding-top:22px">
+                  <button class="btn btn-primary btn-sm w-full" onclick="loadAnalytics()">Load Analytics</button>
+                </div>
+              </div>
+              <div id="analytics-body"><div class="empty"><div class="empty-icon">📊</div><div class="empty-text">Select filters and click Load Analytics</div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="master-tab-supervisors">
+          <div class="card">
+            <div class="card-hd">
+              <div><div class="card-title">👤 Supervisor Management</div></div>
+              <button class="btn btn-primary btn-sm" onclick="openUserModal()">+ Add Supervisor</button>
+            </div>
+            <div class="card-body" style="padding:0">
+              <div class="tbl-wrap"><table><thead><tr><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="users-table"></tbody></table></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUPERVISOR VIEW -->
+      <div id="view-supervisor" style="display:none">
+        <div class="sup-menu-grid">
+          <div class="sup-menu-card" onclick="showSupMenu('issuance')"><div class="sup-menu-icon">📦</div><div class="sup-menu-title">Inventory Issuance</div><div class="sup-menu-sub">Request supplies</div></div>
+          <div class="sup-menu-card" onclick="showSupMenu('duty')"><div class="sup-menu-icon">📋</div><div class="sup-menu-title">Daily Duty</div><div class="sup-menu-sub">Mark attendance</div></div>
+          <div class="sup-menu-card" onclick="showSupMenu('qr')"><div class="sup-menu-icon">📷</div><div class="sup-menu-title">QR Scanner</div><div class="sup-menu-sub">Location check-in</div></div>
+        </div>
+        <div id="sup-issuance" style="display:none">
+          <div class="card">
+            <div class="card-hd"><div><div class="card-title">📦 Inventory Issuance</div></div><button class="btn btn-primary btn-sm" onclick="openIssuanceModal()">+ New Issuance</button></div>
+            <div class="card-body" style="padding:0"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Department</th><th>Items</th><th>Notes</th></tr></thead><tbody id="sup-issuance-table"></tbody></table></div></div>
+          </div>
+        </div>
+        <div id="sup-duty" style="display:none">
+          <div class="card">
+            <div class="card-hd"><div><div class="card-title">📋 Daily Duty Assignment</div></div></div>
+            <div class="card-body">
+              <div class="form-grid form-grid-2 mb-4">
+                <div class="form-field"><label>Date</label><input type="date" id="duty-date"></div>
+                <div class="form-field"><label>Shift</label><select id="duty-shift-sel"><option value="">Select shift…</option></select></div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="loadDutySheet()">Load Duty Sheet</button>
+              <div id="duty-sheet" style="display:none" class="mt-4">
+                <div class="tbl-wrap mb-4"><table><thead><tr><th>Staff Name</th><th>ID</th><th>Department</th><th>Status</th></tr></thead><tbody id="duty-sheet-rows"></tbody></table></div>
+                <div class="flex gap-2 flex-wrap">
+                  <button class="btn btn-primary btn-sm" onclick="submitDuty()">✅ Submit Attendance</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card mt-4">
+            <div class="card-hd"><div><div class="card-title">Past Submissions</div></div></div>
+            <div class="card-body" style="padding:0"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Shift</th><th>Present</th><th>Total</th><th>Submitted</th></tr></thead><tbody id="sup-duty-history"></tbody></table></div></div>
+          </div>
+        </div>
+        <div id="sup-qr" style="display:none">
+          <div class="card">
+            <div class="card-hd"><div><div class="card-title">📷 QR Location Scanner</div><div class="card-desc">GPS-validated check-in</div></div></div>
+            <div class="card-body">
+              <div class="form-field mb-4" style="max-width:280px"><label>Select Shift</label><select id="qr-scan-shift"><option value="">Select shift…</option></select></div>
+              <div id="qr-msg" style="display:none" class="alert mb-4"></div>
+              <div id="qr-camera-wrap" style="display:none">
+                <div class="qr-video-wrap"><video id="qr-video" playsinline autoplay muted></video><div class="qr-overlay"><div class="qr-frame"><div class="scan-line"></div></div></div></div>
+                <button class="btn btn-danger btn-sm mt-3" onclick="stopQRScan()">Stop Scanner</button>
+              </div>
+              <div id="qr-idle"><button class="btn btn-primary" onclick="startQRScan()">📷 Start QR Scanner</button></div>
+              <div id="qr-scan-log" class="mt-4"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-bg" id="modal-inv"><div class="modal">
+  <div class="modal-hd"><span class="modal-title" id="inv-modal-title">Add Item</span><button class="btn-close" onclick="closeModal('modal-inv')">✕</button></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="form-field"><label>Item Name *</label><input type="text" id="inv-name"></div>
+    <div class="form-grid form-grid-2">
+      <div class="form-field"><label>Quantity *</label><input type="number" id="inv-qty" min="0"></div>
+      <div class="form-field"><label>Unit *</label><input type="text" id="inv-unit" placeholder="Litres / Nos"></div>
+    </div>
+    <div class="form-field"><label>Description</label><textarea id="inv-desc" rows="2"></textarea></div>
+  </div></div>
+  <div class="modal-ft"><button class="btn btn-outline" onclick="closeModal('modal-inv')">Cancel</button><button class="btn btn-primary" onclick="saveInv()">Save</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-dept"><div class="modal">
+  <div class="modal-hd"><span class="modal-title">Add Department</span><button class="btn-close" onclick="closeModal('modal-dept')">✕</button></div>
+  <div class="modal-body"><div class="form-field"><label>Name *</label><input type="text" id="dept-name"></div></div>
+  <div class="modal-ft"><button class="btn btn-outline" onclick="closeModal('modal-dept')">Cancel</button><button class="btn btn-primary" onclick="saveDept()">Save</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-staff"><div class="modal">
+  <div class="modal-hd"><span class="modal-title" id="staff-modal-title">Add Staff</span><button class="btn-close" onclick="closeModal('modal-staff')">✕</button></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="form-field"><label>Full Name *</label><input type="text" id="s-name"></div>
+    <div class="form-grid form-grid-2">
+      <div class="form-field"><label>Attendance ID *</label><input type="text" id="s-attid"></div>
+      <div class="form-field"><label>Designation</label><input type="text" id="s-desig"></div>
+    </div>
+    <div class="form-field"><label>Department</label><select id="s-dept"><option value="">Select…</option></select></div>
+    <div class="form-field"><label>Type</label><select id="s-type"><option value="regular">Regular</option><option value="reliever">Reliever</option></select></div>
+  </div></div>
+  <div class="modal-ft"><button class="btn btn-outline" onclick="closeModal('modal-staff')">Cancel</button><button class="btn btn-primary" onclick="saveStaff()">Save</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-loc"><div class="modal">
+  <div class="modal-hd"><span class="modal-title" id="loc-modal-title">Add Location</span><button class="btn-close" onclick="closeModal('modal-loc')">✕</button></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="form-field"><label>Location Name *</label><input type="text" id="loc-name"></div>
+    <div class="form-grid form-grid-2">
+      <div class="form-field"><label>Latitude</label><input type="number" id="loc-lat" step="any"></div>
+      <div class="form-field"><label>Longitude</label><input type="number" id="loc-lng" step="any"></div>
+    </div>
+    <div class="form-field"><label>Block</label><select id="loc-block"><option value="">None</option></select></div>
+    <button class="btn btn-outline btn-sm" onclick="getGPS()">📍 Use My GPS Location</button>
+  </div></div>
+  <div class="modal-ft"><button class="btn btn-outline" onclick="closeModal('modal-loc')">Cancel</button><button class="btn btn-primary" onclick="saveLoc()">Save</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-shift"><div class="modal">
+  <div class="modal-hd"><span class="modal-title">Create Shift</span><button class="btn-close" onclick="closeModal('modal-shift')">✕</button></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="form-field"><label>Shift Name *</label><input type="text" id="shift-name" placeholder="e.g. Morning Shift"></div>
+    <div class="form-grid form-grid-2">
+      <div class="form-field"><label>Start Time *</label><input type="time" id="shift-start"></div>
+      <div class="form-field"><label>End Time *</label><input type="time" id="shift-end"></div>
+    </div>
+  </div></div>
+  <div class="modal-ft"><button class="btn btn-outline" onclick="closeModal('modal-shift')">Cancel</button><button class="btn btn-primary" onclick="saveShift()">Create</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-issuance"><div class="modal" style="max-width:580px">
+  <div class="modal-hd"><span class="modal-title">New Issuance</span><button class="btn-close" onclick="closeModal('modal-issuance')">✕</button></div>
+  <div class="modal-body">
+    <div class="form-grid form-grid-2 mb-3">
+      <div class="form-field"><label>Department *</label><select id="iss-dept"><option value="">Select…</option></select></div>
+      <div class="form-field"><label>Issue Date *</label><input type="date" id="iss-date"></div>
+    </div>
+    <div class="flex items-center justify-between mb-2">
+      <label class="lbl" style="margin:0">Items</label>
+      <button class="btn btn-outline btn-xs" onclick="addIssRow()">+ Add Row</button>
+    </div>
+    <div id="iss-rows"></div>
+    <div class="form-field mt-3"><label>Notes</label><textarea id="iss-notes" rows="2"></textarea></div>
+  </div>
+  <div class="modal-ft"><button class="btn btn-outline" onclick="closeModal('modal-issuance')">Cancel</button><button class="btn btn-primary" onclick="saveIssuance()">Save Issuance</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-user"><div class="modal">
+  <div class="modal-hd"><span class="modal-title">Add Supervisor</span><button class="btn-close" onclick="closeModal('modal-user')">✕</button></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="form-field"><label>Email *</label><input type="email" id="u-email"></div>
+    <div class="form-field"><label>Password *</label><input type="password" id="u-pass"></div>
+    <div class="form-field"><label>Role</label><select id="u-role"><option value="supervisor">Supervisor</option><option value="master">Master</option></select></div>
+  </div></div>
+  <div class="modal-ft"><button class="btn btn-outline" onclick="closeModal('modal-user')">Cancel</button><button class="btn btn-primary" onclick="saveUser()">Create</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-block"><div class="modal">
+  <div class="modal-hd"><span class="modal-title">Add Block</span><button class="btn-close" onclick="closeModal('modal-block')">✕</button></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="form-field"><label>Block Name *</label><input type="text" id="block-name"></div>
+    <div class="form-field"><label>Supervisor</label><select id="block-sup"><option value="">None</option></select></div>
+  </div></div>
+  <div class="modal-ft"><button class="btn btn-outline" onclick="closeModal('modal-block')">Cancel</button><button class="btn btn-primary" onclick="saveBlock()">Save</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-assign"><div class="modal">
+  <div class="modal-hd"><span class="modal-title" id="assign-title">Assign Staff</span><button class="btn-close" onclick="closeModal('modal-assign')">✕</button></div>
+  <div class="modal-body">
+    <input class="inp mb-3" placeholder="🔍 Search staff…" oninput="renderAssignList(this.value)" id="assign-search">
+    <div id="assign-list" style="max-height:320px;overflow-y:auto"></div>
+  </div>
+  <div class="modal-ft"><button class="btn btn-primary" onclick="closeModal('modal-assign')">Done</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-qrverify"><div class="modal">
+  <div class="modal-hd"><span class="modal-title">📷 QR Verifier</span><button class="btn-close" onclick="stopQRVerifier()">✕</button></div>
+  <div class="modal-body">
+    <div class="qr-video-wrap mb-3"><video id="verify-video" playsinline autoplay muted></video><div class="qr-overlay"><div class="qr-frame"><div class="scan-line"></div></div></div></div>
+    <div id="verify-result"></div>
+  </div>
+</div></div>
+
+<script>
+// ══════════════════════════════════════════════
+// SUPABASE INIT
+// ══════════════════════════════════════════════
+let sb = null;
+let currentUser = null;
+let currentProfile = null;
+
+function getConfig(){
+  return {url: localStorage.getItem('hk_sb_url'), key: localStorage.getItem('hk_sb_key')};
+}
+
+async function initSupabase(){
+  const {url, key} = getConfig();
+  if(!url || !key) return false;
+  try {
+    sb = supabase.createClient(url, key);
+    return true;
+  } catch(e) { return false; }
+}
+
+async function saveSetup(){
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  const err = document.getElementById('setup-err');
+  err.classList.remove('show');
+  if(!url || !key){ err.textContent='Both URL and Key are required.'; err.classList.add('show'); return; }
+  if(!url.includes('supabase.co')){ err.textContent='URL should be like https://xxx.supabase.co'; err.classList.add('show'); return; }
+  localStorage.setItem('hk_sb_url', url);
+  localStorage.setItem('hk_sb_key', key);
+  const ok = await initSupabase();
+  if(!ok){ err.textContent='Could not connect. Check your URL and Key.'; err.classList.add('show'); return; }
+  // Test connection
+  try {
+    const {error} = await sb.from('users').select('id').limit(1);
+    if(error && error.code !== 'PGRST116'){
+      err.textContent = 'Connection error: ' + error.message + '. Did you run the SQL setup?';
+      err.classList.add('show'); return;
+    }
+  } catch(e){ err.textContent='Connection failed: '+e.message; err.classList.add('show'); return; }
+  showScreen('s-login');
+}
+
+function resetSetup(){
+  showScreen('s-setup');
+}
+
+// ══════════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ══════════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function loading(show){ document.getElementById('loading-overlay').classList.toggle('show', show); }
+
+// ══════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async ()=>{
+  const ok = await initSupabase();
+  if(!ok){ showScreen('s-setup'); return; }
+
+  const {data:{session}} = await sb.auth.getSession();
+  if(session){
+    await loadProfile(session.user.id);
+  } else {
+    showScreen('s-login');
+  }
+});
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && document.getElementById('s-login').classList.contains('active')) doLogin();
+});
+
+async function doLogin(){
+  const email = document.getElementById('l-email').value.trim();
+  const pass = document.getElementById('l-pass').value;
+  const err = document.getElementById('login-err');
+  err.classList.remove('show');
+  if(!email||!pass){ err.textContent='Enter email and password.'; err.classList.add('show'); return; }
+
+  loading(true);
+  try {
+    const {data, error} = await sb.auth.signInWithPassword({email, password: pass});
+    if(error) throw error;
+    await loadProfile(data.user.id);
+  } catch(e){
+    err.textContent = e.message || 'Login failed';
+    err.classList.add('show');
+  } finally { loading(false); }
+}
+
+async function loadProfile(userId){
+  loading(true);
+  try {
+    const {data, error} = await sb.from('users').select('*').eq('id', userId).single();
+    if(error) throw error;
+    currentProfile = data;
+    currentUser = {id: userId, email: data.email, role: data.role};
+    await launchApp();
+  } catch(e){
+    toast('Profile error: '+e.message, 'err');
+    showScreen('s-login');
+  } finally { loading(false); }
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  currentUser = null; currentProfile = null;
+  stopQRScan();
+  showScreen('s-login');
+}
+
+async function launchApp(){
+  showScreen('s-app');
+  document.getElementById('role-pill').textContent = currentUser.role.charAt(0).toUpperCase()+currentUser.role.slice(1);
+  document.getElementById('role-pill').className = 'role-pill role-'+currentUser.role;
+  document.getElementById('user-pill').textContent = currentUser.email;
+
+  if(currentUser.role === 'master'){
+    document.getElementById('view-master').style.display='block';
+    document.getElementById('view-supervisor').style.display='none';
+    await loadAllMasterData();
+  } else {
+    document.getElementById('view-master').style.display='none';
+    document.getElementById('view-supervisor').style.display='block';
+    document.getElementById('duty-date').value = new Date().toISOString().split('T')[0];
+    await Promise.all([loadShifts(), loadDepartments(), loadInventory()]);
+    populateShiftSelects();
+    loadSupIssuance();
+    loadSupDutyHistory();
+  }
+}
+
+async function loadAllMasterData(){
+  loading(true);
+  await Promise.all([
+    loadInventory(), loadDepartments(), loadStaff(),
+    loadLocations(), loadShifts(), loadBlocks(),
+    loadUsers(), loadIssuance(), loadAssignments(), loadQRLogs()
+  ]);
+  loading(false);
+}
+
+// ══════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════
+function toast(msg, type='ok'){
+  const el = document.getElementById('g-alert');
+  el.className = `alert g-alert alert-${type==='ok'?'ok':type==='err'?'err':type==='info'?'info':'warn'} show`;
+  el.textContent = msg;
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>el.classList.remove('show'), 3200);
+}
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function switchTab(btn, group){
+  document.querySelectorAll('#'+group+'-tabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('[id^="'+group+'-tab-"]').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(group+'-tab-'+btn.dataset.tab)?.classList.add('active');
+  if(btn.dataset.tab==='analytics'){ refreshDeptSelects(); refreshAnItemSelect(); }
+}
+function showSupMenu(name){
+  ['issuance','duty','qr'].forEach(m=>document.getElementById('sup-'+m).style.display=m===name?'block':'none');
+  document.querySelectorAll('.sup-menu-card').forEach((c,i)=>c.classList.toggle('active',['issuance','duty','qr'][i]===name));
+  if(name==='duty') populateShiftSelects();
+}
+function esc(s){ return s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(s){ if(!s)return ''; try{ return new Date(s).toLocaleDateString('en-GB'); }catch(e){return s;} }
+function fmtDateTime(s){ if(!s)return ''; try{ return new Date(s).toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(e){return s;} }
+function downloadCSV(content, filename){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8;'}));
+  a.download=filename; a.click();
+}
+
+// ══════════════════════════════════════════════
+// INVENTORY
+// ══════════════════════════════════════════════
+let inventoryData = [];
+let editingInv = null;
+
+async function loadInventory(){
+  const {data,error} = await sb.from('inventory').select('*').order('name');
+  if(error){ toast('Inventory load error: '+error.message,'err'); return; }
+  inventoryData = data||[];
+  renderInventory();
+  renderInventoryStats();
+  refreshDeptSelects();
+}
+
+function renderInventoryStats(){
+  const low = inventoryData.filter(i=>i.quantity<10&&i.quantity>0).length;
+  const zero = inventoryData.filter(i=>i.quantity===0).length;
+  document.getElementById('inv-stats').innerHTML=`
+    <div class="stat-card stat-blue"><div class="stat-lbl">Total Items</div><div class="stat-val">${inventoryData.length}</div></div>
+    <div class="stat-card stat-green"><div class="stat-lbl">In Stock</div><div class="stat-val">${inventoryData.filter(i=>i.quantity>10).length}</div></div>
+    <div class="stat-card stat-amber"><div class="stat-lbl">Low Stock</div><div class="stat-val">${low}</div></div>
+    <div class="stat-card stat-red"><div class="stat-lbl">Out of Stock</div><div class="stat-val">${zero}</div></div>
+  `;
+}
+
+function renderInventory(filter=''){
+  let items = inventoryData;
+  if(filter){ const lo=filter.toLowerCase(); items=items.filter(i=>i.name.toLowerCase().includes(lo)||(i.unit||'').toLowerCase().includes(lo)); }
+  const tb = document.getElementById('inv-table');
+  if(!items.length){ tb.innerHTML=`<tr><td colspan="5"><div class="empty"><div class="empty-icon">📦</div><div class="empty-text">No items found</div></div></td></tr>`; return; }
+  tb.innerHTML = items.map(i=>`
+    <tr>
+      <td><strong>${esc(i.name)}</strong></td>
+      <td><strong>${i.quantity}</strong></td>
+      <td><span class="badge badge-gray">${esc(i.unit)}</span></td>
+      <td class="text-muted">${esc(i.description||'—')}</td>
+      <td><div class="flex gap-2">
+        <button class="btn btn-outline btn-xs" onclick="openInvModal('${i.id}')">Edit</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteInv('${i.id}')">Del</button>
+      </div></td>
+    </tr>
+  `).join('');
+}
+
+function openInvModal(id){
+  editingInv = id ? inventoryData.find(i=>i.id===id) : null;
+  document.getElementById('inv-modal-title').textContent = editingInv?'Edit Item':'Add Inventory Item';
+  document.getElementById('inv-name').value = editingInv?.name||'';
+  document.getElementById('inv-qty').value = editingInv?.quantity??'';
+  document.getElementById('inv-unit').value = editingInv?.unit||'';
+  document.getElementById('inv-desc').value = editingInv?.description||'';
+  openModal('modal-inv');
+}
+
+async function saveInv(){
+  const name=document.getElementById('inv-name').value.trim();
+  const quantity=parseInt(document.getElementById('inv-qty').value);
+  const unit=document.getElementById('inv-unit').value.trim();
+  const description=document.getElementById('inv-desc').value.trim();
+  if(!name||isNaN(quantity)||!unit){ toast('Name, Quantity and Unit required.','err'); return; }
+  loading(true);
+  try {
+    if(editingInv){
+      const {error} = await sb.from('inventory').update({name,quantity,unit,description}).eq('id',editingInv.id);
+      if(error) throw error;
+    } else {
+      const {error} = await sb.from('inventory').insert({name,quantity,unit,description});
+      if(error) throw error;
+    }
+    closeModal('modal-inv');
+    await loadInventory();
+    toast('Inventory saved!');
+  } catch(e){ toast('Error: '+e.message,'err'); }
+  finally { loading(false); }
+}
+
+async function deleteInv(id){
+  if(!confirm('Delete this item?')) return;
+  const {error} = await sb.from('inventory').delete().eq('id',id);
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  await loadInventory();
+  toast('Item deleted.');
+}
+
+// ══════════════════════════════════════════════
+// DEPARTMENTS
+// ══════════════════════════════════════════════
+let departmentsData = [];
+
+async function loadDepartments(){
+  const {data,error} = await sb.from('departments').select('*').order('name');
+  if(error){ toast('Departments error: '+error.message,'err'); return; }
+  departmentsData = data||[];
+  renderDepartments();
+  refreshDeptSelects();
+}
+
+function renderDepartments(){
+  const tb = document.getElementById('dept-table');
+  if(!departmentsData.length){ tb.innerHTML='<tr><td colspan="2" class="text-center text-muted" style="padding:32px">No departments yet.</td></tr>'; return; }
+  tb.innerHTML = departmentsData.map(d=>`
+    <tr><td><strong>${esc(d.name)}</strong></td>
+    <td><button class="btn btn-danger btn-xs" onclick="deleteDept('${d.id}')">Delete</button></td></tr>
+  `).join('');
+}
+
+function openDeptModal(){ document.getElementById('dept-name').value=''; openModal('modal-dept'); }
+
+async function saveDept(){
+  const name = document.getElementById('dept-name').value.trim();
+  if(!name){ toast('Name required.','err'); return; }
+  loading(true);
+  try {
+    const {error} = await sb.from('departments').insert({name});
+    if(error) throw error;
+    closeModal('modal-dept');
+    await loadDepartments();
+    toast('Department added!');
+  } catch(e){ toast('Error: '+e.message,'err'); }
+  finally { loading(false); }
+}
+
+async function deleteDept(id){
+  if(!confirm('Delete?')) return;
+  const {error} = await sb.from('departments').delete().eq('id',id);
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  await loadDepartments();
+}
+
+function refreshDeptSelects(){
+  const opts = departmentsData.map(d=>`<option value="${esc(d.name)}">${esc(d.name)}</option>`).join('');
+  ['s-dept','iss-dept'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){ el.innerHTML='<option value="">Select…</option>'+opts; }
+  });
+  const anDept = document.getElementById('an-dept');
+  if(anDept) anDept.innerHTML='<option value="all">All departments</option>'+opts;
+}
+
+// ══════════════════════════════════════════════
+// STAFF
+// ══════════════════════════════════════════════
+let staffData = [];
+let editingStaff = null;
+
+async function loadStaff(){
+  const showRelievers = document.getElementById('show-relievers')?.checked;
+  let query = sb.from('staff').select('*').order('name');
+  if(!showRelievers) query = query.neq('type','reliever');
+  const {data,error} = await query;
+  if(error){ toast('Staff error: '+error.message,'err'); return; }
+  staffData = data||[];
+  renderStaff();
+}
+
+function renderStaff(filter=''){
+  let list = staffData;
+  if(filter){ const lo=filter.toLowerCase(); list=list.filter(s=>s.name.toLowerCase().includes(lo)||s.attendance_id.toLowerCase().includes(lo)||(s.department||'').toLowerCase().includes(lo)); }
+  const tb = document.getElementById('staff-table');
+  if(!list.length){ tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">👥</div><div class="empty-text">No staff found</div></div></td></tr>`; return; }
+  tb.innerHTML = list.map(s=>`
+    <tr>
+      <td><strong>${esc(s.name)}</strong></td>
+      <td><span class="badge badge-gray">${esc(s.attendance_id)}</span></td>
+      <td>${esc(s.designation||'—')}</td>
+      <td>${esc(s.department||'—')}</td>
+      <td><span class="badge ${s.type==='reliever'?'badge-amber':'badge-blue'}">${s.type||'regular'}</span></td>
+      <td><div class="flex gap-2">
+        <button class="btn btn-outline btn-xs" onclick="openStaffModal('${s.id}')">Edit</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteStaffMember('${s.id}')">Del</button>
+      </div></td>
+    </tr>
+  `).join('');
+}
+
+function openStaffModal(id){
+  editingStaff = id ? staffData.find(s=>s.id===id) : null;
+  document.getElementById('staff-modal-title').textContent = editingStaff?'Edit Staff':'Add Staff Member';
+  document.getElementById('s-name').value = editingStaff?.name||'';
+  document.getElementById('s-attid').value = editingStaff?.attendance_id||'';
+  document.getElementById('s-desig').value = editingStaff?.designation||'';
+  document.getElementById('s-type').value = editingStaff?.type||'regular';
+  refreshDeptSelects();
+  document.getElementById('s-dept').value = editingStaff?.department||'';
+  openModal('modal-staff');
+}
+
+async function saveStaff(){
+  const name=document.getElementById('s-name').value.trim();
+  const attendance_id=document.getElementById('s-attid').value.trim();
+  const designation=document.getElementById('s-desig').value.trim();
+  const department=document.getElementById('s-dept').value;
+  const type=document.getElementById('s-type').value;
+  if(!name||!attendance_id){ toast('Name and Attendance ID required.','err'); return; }
+  loading(true);
+  try {
+    if(editingStaff){
+      const {error} = await sb.from('staff').update({name,attendance_id,designation,department,type}).eq('id',editingStaff.id);
+      if(error) throw error;
+    } else {
+      const {error} = await sb.from('staff').insert({name,attendance_id,designation,department,type});
+      if(error) throw error;
+    }
+    closeModal('modal-staff');
+    await loadStaff();
+    toast('Staff saved!');
+  } catch(e){ toast('Error: '+e.message,'err'); }
+  finally { loading(false); }
+}
+
+async function deleteStaffMember(id){
+  if(!confirm('Delete?')) return;
+  const {error} = await sb.from('staff').delete().eq('id',id);
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  await loadStaff();
+}
+
+// ══════════════════════════════════════════════
+// LOCATIONS
+// ══════════════════════════════════════════════
+let locationsData = [];
+let editingLoc = null;
+
+async function loadLocations(){
+  const {data,error} = await sb.from('locations').select('*').order('name');
+  if(error){ toast('Locations error: '+error.message,'err'); return; }
+  locationsData = data||[];
+  renderLocations();
+}
+
+function renderLocations(){
+  const blocks = blocksData||[];
+  const tb = document.getElementById('loc-table');
+  if(!locationsData.length){ tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">📍</div><div class="empty-text">No locations yet</div></div></td></tr>`; return; }
+  tb.innerHTML = locationsData.map(l=>{
+    const block = blocks.find(b=>b.id===l.block_id);
+    return `<tr>
+      <td><strong>${esc(l.name)}</strong></td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${l.latitude||'—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${l.longitude||'—'}</td>
+      <td>${block?`<span class="badge badge-blue">${esc(block.name)}</span>`:'—'}</td>
+      <td><button class="btn btn-outline btn-xs" onclick="downloadQR('${l.id}')">⬇ QR</button></td>
+      <td><div class="flex gap-2">
+        <button class="btn btn-outline btn-xs" onclick="openLocModal('${l.id}')">Edit</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteLoc('${l.id}')">Del</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  // Populate block select in loc modal
+  const locBlock = document.getElementById('loc-block');
+  if(locBlock) locBlock.innerHTML='<option value="">None</option>'+blocks.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
+}
+
+function openLocModal(id){
+  editingLoc = id ? locationsData.find(l=>l.id===id) : null;
+  document.getElementById('loc-modal-title').textContent = editingLoc?'Edit Location':'Add Location';
+  document.getElementById('loc-name').value = editingLoc?.name||'';
+  document.getElementById('loc-lat').value = editingLoc?.latitude||'';
+  document.getElementById('loc-lng').value = editingLoc?.longitude||'';
+  renderLocations(); // refresh block select
+  document.getElementById('loc-block').value = editingLoc?.block_id||'';
+  openModal('modal-loc');
+}
+
+async function saveLoc(){
+  const name=document.getElementById('loc-name').value.trim();
+  const latitude=parseFloat(document.getElementById('loc-lat').value)||0;
+  const longitude=parseFloat(document.getElementById('loc-lng').value)||0;
+  const block_id=document.getElementById('loc-block').value||null;
+  if(!name){ toast('Name required.','err'); return; }
+  const qr_text = `HK_LOC_${name.replace(/\s+/g,'_').toUpperCase()}_${latitude}_${longitude}`;
+  loading(true);
+  try {
+    if(editingLoc){
+      const {error} = await sb.from('locations').update({name,latitude,longitude,block_id,qr_text}).eq('id',editingLoc.id);
+      if(error) throw error;
+    } else {
+      const {error} = await sb.from('locations').insert({name,latitude,longitude,block_id,qr_text});
+      if(error) throw error;
+    }
+    closeModal('modal-loc');
+    await loadLocations();
+    toast('Location saved!');
+  } catch(e){ toast('Error: '+e.message,'err'); }
+  finally { loading(false); }
+}
+
+async function deleteLoc(id){
+  if(!confirm('Delete?')) return;
+  const {error} = await sb.from('locations').delete().eq('id',id);
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  await loadLocations();
+}
+
+function getGPS(){
+  navigator.geolocation.getCurrentPosition(pos=>{
+    document.getElementById('loc-lat').value=pos.coords.latitude.toFixed(6);
+    document.getElementById('loc-lng').value=pos.coords.longitude.toFixed(6);
+    toast('GPS captured!');
+  },err=>toast('GPS error: '+err.message,'err'));
+}
+
+function downloadQR(locId){
+  const loc = locationsData.find(l=>l.id===locId);
+  if(!loc) return;
+  const qrText = loc.qr_text || `HK_LOC_${loc.id}`;
+  window.open(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrText)}`,'_blank');
+}
+
+async function saveGpsSettings(){
+  const r = parseInt(document.getElementById('gps-radius').value);
+  if(isNaN(r)||r<10){ toast('Min 10m','err'); return; }
+  const {error} = await sb.from('settings').upsert({key:'gps_radius',value:String(r)});
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  toast('GPS settings saved!');
+}
+
+// ══════════════════════════════════════════════
+// BLOCKS
+// ══════════════════════════════════════════════
+let blocksData = [];
+
+async function loadBlocks(){
+  const {data,error} = await sb.from('blocks').select('*').order('name');
+  if(error){ toast('Blocks error: '+error.message,'err'); return; }
+  blocksData = data||[];
+  renderBlocks();
+}
+
+function renderBlocks(){
+  const tb = document.getElementById('blocks-table');
+  if(!tb) return;
+  tb.innerHTML = !blocksData.length
+    ? '<tr><td colspan="3" class="text-center text-muted" style="padding:24px">No blocks yet.</td></tr>'
+    : blocksData.map(b=>`<tr><td><strong>${esc(b.name)}</strong></td><td>${esc(b.supervisor_email||'—')}</td><td><button class="btn btn-danger btn-xs" onclick="deleteBlock('${b.id}')">Delete</button></td></tr>`).join('');
+  const blockSup = document.getElementById('block-sup');
+  if(blockSup && usersData){
+    blockSup.innerHTML='<option value="">None</option>'+usersData.filter(u=>u.role==='supervisor').map(u=>`<option value="${u.email}">${u.email}</option>`).join('');
+  }
+}
+
+function openBlockModal(){ document.getElementById('block-name').value=''; renderBlocks(); openModal('modal-block'); }
+
+async function saveBlock(){
+  const name = document.getElementById('block-name').value.trim();
+  const supervisor_email = document.getElementById('block-sup').value||null;
+  if(!name){ toast('Name required.','err'); return; }
+  loading(true);
+  try {
+    const {error} = await sb.from('blocks').insert({name,supervisor_email});
+    if(error) throw error;
+    closeModal('modal-block');
+    await loadBlocks();
+    toast('Block added!');
+  } catch(e){ toast('Error: '+e.message,'err'); }
+  finally { loading(false); }
+}
+
+async function deleteBlock(id){
+  if(!confirm('Delete?')) return;
+  const {error} = await sb.from('blocks').delete().eq('id',id);
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  await loadBlocks();
+}
+
+// ══════════════════════════════════════════════
+// SHIFTS
+// ══════════════════════════════════════════════
+let shiftsData = [];
+let currentAssignShift = null;
+
+async function loadShifts(){
+  const {data,error} = await sb.from('shifts').select('*').order('name');
+  if(error){ toast('Shifts error: '+error.message,'err'); return; }
+  shiftsData = data||[];
+  renderShifts();
+  populateShiftSelects();
+}
+
+function renderShifts(){
+  const grid = document.getElementById('shifts-grid');
+  if(!grid) return;
+  if(!shiftsData.length){ grid.innerHTML='<p class="text-muted">No shifts yet. Create one to get started.</p>'; return; }
+  grid.innerHTML = shiftsData.map(sh=>`
+    <div class="card" style="border:1px solid #e2e8f0">
+      <div class="card-body" style="padding:16px">
+        <div class="flex justify-between items-center mb-2">
+          <div><div class="font-bold" style="font-size:15px">${esc(sh.name)}</div>
+            <div class="text-muted text-sm">${sh.start_time} – ${sh.end_time}</div>
+            <div class="text-xs text-muted mt-1">${(sh.assigned_staff||[]).length} staff assigned</div>
+          </div>
+          <button class="btn btn-danger btn-xs" onclick="deleteShift('${sh.id}')">🗑</button>
+        </div>
+        <button class="btn btn-outline btn-sm w-full mt-2" onclick="openAssignModal('${sh.id}')">👥 Assign Staff</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function populateShiftSelects(){
+  const opts = shiftsData.map(s=>`<option value="${s.id}">${esc(s.name)} (${s.start_time}–${s.end_time})</option>`).join('');
+  ['duty-shift-sel','qr-scan-shift','qr-shift-filter'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.innerHTML='<option value="">Select shift…</option>'+opts;
+  });
+}
+
+function openShiftModal(){ document.getElementById('shift-name').value=''; document.getElementById('shift-start').value=''; document.getElementById('shift-end').value=''; openModal('modal-shift'); }
+
+async function saveShift(){
+  const name=document.getElementById('shift-name').value.trim();
+  const start_time=document.getElementById('shift-start').value;
+  const end_time=document.getElementById('shift-end').value;
+  if(!name||!start_time||!end_time){ toast('All fields required.','err'); return; }
+  loading(true);
+  try {
+    const {error} = await sb.from('shifts').insert({name,start_time,end_time,assigned_staff:[]});
+    if(error) throw error;
+    closeModal('modal-shift');
+    await loadShifts();
+    toast('Shift created!');
+  } catch(e){ toast('Error: '+e.message,'err'); }
+  finally { loading(false); }
+}
+
+async function deleteShift(id){
+  if(!confirm('Delete shift?')) return;
+  const {error} = await sb.from('shifts').delete().eq('id',id);
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  await loadShifts();
+}
+
+function openAssignModal(shiftId){
+  currentAssignShift = shiftsData.find(s=>s.id===shiftId);
+  document.getElementById('assign-title').textContent = `Assign Staff — ${currentAssignShift.name}`;
+  document.getElementById('assign-search').value='';
+  renderAssignList('');
+  openModal('modal-assign');
+}
+
+function renderAssignList(filter=''){
+  let list = staffData.filter(s=>s.type!=='reliever');
+  if(filter){ const lo=filter.toLowerCase(); list=list.filter(s=>s.name.toLowerCase().includes(lo)||s.attendance_id.toLowerCase().includes(lo)); }
+  const assigned = currentAssignShift?.assigned_staff||[];
+  document.getElementById('assign-list').innerHTML = list.map(s=>`
+    <div class="checkbox-row">
+      <input type="checkbox" id="asgn-${s.id}" ${assigned.includes(s.id)?'checked':''} onchange="toggleStaffAssign('${s.id}',this.checked)">
+      <label for="asgn-${s.id}" style="cursor:pointer;font-size:13px">${esc(s.name)} <span class="text-muted">(${esc(s.attendance_id)}) — ${esc(s.department||'')}</span></label>
+    </div>
+  `).join('');
+}
+
+async function toggleStaffAssign(staffId, checked){
+  const current = currentAssignShift?.assigned_staff||[];
+  const updated = checked ? [...current,staffId] : current.filter(id=>id!==staffId);
+  const {error} = await sb.from('shifts').update({assigned_staff:updated}).eq('id',currentAssignShift.id);
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  currentAssignShift = {...currentAssignShift, assigned_staff:updated};
+  const sh = shiftsData.find(s=>s.id===currentAssignShift.id);
+  if(sh) sh.assigned_staff = updated;
+  renderShifts();
+}
+
+// ══════════════════════════════════════════════
+// DUTY ASSIGNMENTS
+// ══════════════════════════════════════════════
+let dutyRows = [];
+
+function loadDutySheet(){
+  const date = document.getElementById('duty-date').value;
+  const shiftId = document.getElementById('duty-shift-sel').value;
+  if(!date||!shiftId){ toast('Select date and shift.','err'); return; }
+  const shift = shiftsData.find(s=>s.id===shiftId);
+  const assignedIds = shift?.assigned_staff||[];
+  dutyRows = staffData.filter(s=>assignedIds.includes(s.id)).map(s=>({...s,present:true}));
+  const tb = document.getElementById('duty-sheet-rows');
+  tb.innerHTML = dutyRows.map((s,i)=>`
+    <tr>
+      <td><strong>${esc(s.name)}</strong></td>
+      <td><span class="badge badge-gray">${esc(s.attendance_id)}</span></td>
+      <td>${esc(s.department||'—')}</td>
+      <td>
+        <select onchange="dutyRows[${i}].present=this.value==='present'" style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;font-size:12px">
+          <option value="present">✅ Present</option>
+          <option value="absent">❌ Absent</option>
+        </select>
+      </td>
+    </tr>
+  `).join('');
+  document.getElementById('duty-sheet').style.display='block';
+}
+
+async function submitDuty(){
+  const date = document.getElementById('duty-date').value;
+  const shiftId = document.getElementById('duty-shift-sel').value;
+  const shift = shiftsData.find(s=>s.id===shiftId);
+  const present_count = dutyRows.filter(r=>r.present).length;
+  loading(true);
+  try {
+    const {error} = await sb.from('daily_assignments').insert({
+      date, shift_id:shiftId, shift_name:shift?.name,
+      supervisor_id:currentUser.id, supervisor_email:currentUser.email,
+      attendance_records:dutyRows.map(r=>({staff_id:r.id,name:r.name,attendance_id:r.attendance_id,department:r.department,present:r.present})),
+      present_count, total:dutyRows.length, submitted_at:new Date().toISOString()
+    });
+    if(error) throw error;
+    document.getElementById('duty-sheet').style.display='none';
+    await loadSupDutyHistory();
+    if(currentUser.role==='master') await loadAssignments();
+    toast('Attendance submitted!');
+  } catch(e){ toast('Error: '+e.message,'err'); }
+  finally { loading(false); }
+}
+
+async function loadAssignments(){
+  const {data,error} = await sb.from('daily_assignments').select('*').order('submitted_at',{ascending:false});
+  if(error){ toast('Assignments error: '+error.message,'err'); return; }
+  const tb = document.getElementById('assignments-table');
+  if(!tb) return;
+  if(!data||!data.length){ tb.innerHTML='<tr><td colspan="6" class="text-center text-muted" style="padding:24px">No submissions yet.</td></tr>'; return; }
+  tb.innerHTML = data.map(a=>`
+    <tr>
+      <td>${fmtDate(a.date)}</td><td>${esc(a.shift_name||'')}</td><td>${esc(a.supervisor_email||'')}</td>
+      <td><span class="badge badge-green">${a.present_count||0}</span></td>
+      <td>${a.total||0}</td><td class="text-sm text-muted">${fmtDateTime(a.submitted_at)}</td>
+    </tr>
+  `).join('');
+}
+
+async function loadSupDutyHistory(){
+  const {data,error} = await sb.from('daily_assignments').select('*').eq('supervisor_id',currentUser.id).order('submitted_at',{ascending:false});
+  if(error) return;
+  const tb = document.getElementById('sup-duty-history');
+  if(!tb) return;
+  if(!data||!data.length){ tb.innerHTML='<tr><td colspan="5" class="text-center text-muted" style="padding:24px">No submissions yet.</td></tr>'; return; }
+  tb.innerHTML = data.map(a=>`
+    <tr>
+      <td>${fmtDate(a.date)}</td><td>${esc(a.shift_name||'')}</td>
+      <td><span class="badge badge-green">${a.present_count||0}</span></td>
+      <td>${a.total||0}</td><td class="text-sm text-muted">${fmtDateTime(a.submitted_at)}</td>
+    </tr>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════
+// QR SCANNER
+// ══════════════════════════════════════════════
+let scanStream=null, scanInterval=null, scanLock=false;
+
+async function startQRScan(){
+  const shiftId = document.getElementById('qr-scan-shift').value;
+  if(!shiftId){ toast('Select a shift first.','warn'); return; }
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const vid = document.getElementById('qr-video');
+    vid.srcObject = scanStream;
+    await vid.play();
+    document.getElementById('qr-camera-wrap').style.display='block';
+    document.getElementById('qr-idle').style.display='none';
+    scanLock=false;
+    const canvas = document.createElement('canvas');
+    scanInterval = setInterval(()=>{
+      if(!vid.videoWidth||scanLock) return;
+      canvas.width=vid.videoWidth; canvas.height=vid.videoHeight;
+      const ctx=canvas.getContext('2d'); ctx.drawImage(vid,0,0);
+      const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+      const code=jsQR(img.data,img.width,img.height);
+      if(code){ scanLock=true; processQRScan(code.data,shiftId); }
+    },200);
+  } catch(e){
+    const msg=document.getElementById('qr-msg');
+    msg.style.display='block'; msg.className='alert alert-err mb-4';
+    msg.textContent='Camera error: '+e.message;
+  }
+}
+
+function stopQRScan(){
+  clearInterval(scanInterval);
+  try{if(scanStream)scanStream.getTracks().forEach(t=>t.stop());}catch(e){}
+  scanStream=null;
+  document.getElementById('qr-camera-wrap').style.display='none';
+  document.getElementById('qr-idle').style.display='block';
+}
+
+async function processQRScan(qrData, shiftId){
+  stopQRScan();
+  const loc = locationsData.find(l=>l.qr_text===qrData||qrData.includes(l.id));
+  const shift = shiftsData.find(s=>s.id===shiftId);
+  const msg = document.getElementById('qr-msg');
+  msg.style.display='block';
+  if(!loc){ msg.className='alert alert-err mb-4'; msg.innerHTML='❌ Unknown QR. Location not registered.'; setTimeout(()=>scanLock=false,2000); return; }
+
+  const recordScan = async (lat,lng,gps_status)=>{
+    try {
+      await sb.from('qr_attendance').insert({
+        location_id:loc.id, location_name:loc.name,
+        shift_id:shiftId, shift_name:shift?.name,
+        supervisor_id:currentUser.id, supervisor_email:currentUser.email,
+        latitude:lat, longitude:lng, gps_status,
+        scanned_at:new Date().toISOString()
+      });
+    } catch(e){}
+    renderQRScanLog();
+  };
+
+  if(navigator.geolocation && loc.latitude && loc.longitude){
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      const dist=getDistance(pos.coords.latitude,pos.coords.longitude,loc.latitude,loc.longitude);
+      const radius=150;
+      if(dist>radius){
+        msg.className='alert alert-err mb-4';
+        msg.innerHTML=`❌ Too far (${Math.round(dist)}m). Must be within ${radius}m of ${esc(loc.name)}.`;
+        await recordScan(pos.coords.latitude,pos.coords.longitude,'too_far');
+      } else {
+        msg.className='alert alert-ok mb-4';
+        msg.innerHTML=`✅ Checked in at <strong>${esc(loc.name)}</strong><br>Shift: ${esc(shift?.name||'')}`;
+        await recordScan(pos.coords.latitude,pos.coords.longitude,'success');
+      }
+      setTimeout(()=>scanLock=false,3000);
+    },async ()=>{
+      msg.className='alert alert-warn mb-4';
+      msg.innerHTML=`⚠️ Checked in (no GPS) at <strong>${esc(loc.name)}</strong>`;
+      await recordScan(null,null,'no_gps');
+      setTimeout(()=>scanLock=false,2000);
+    });
+  } else {
+    msg.className='alert alert-ok mb-4';
+    msg.innerHTML=`✅ Checked in at <strong>${esc(loc.name)}</strong>`;
+    await recordScan(null,null,'success');
+    setTimeout(()=>scanLock=false,2000);
+  }
+}
+
+async function renderQRScanLog(){
+  const {data} = await sb.from('qr_attendance').select('*').eq('supervisor_id',currentUser.id).order('scanned_at',{ascending:false}).limit(5);
+  const el = document.getElementById('qr-scan-log');
+  if(!data||!data.length){ el.innerHTML=''; return; }
+  el.innerHTML = '<div class="font-bold text-sm mb-2">Recent Scans</div>'+data.map(l=>`
+    <div class="card mb-2" style="padding:12px;border-radius:10px">
+      <div class="flex justify-between items-center">
+        <div><strong>${esc(l.location_name)}</strong><div class="text-xs text-muted">${fmtDateTime(l.scanned_at)}</div></div>
+        <span class="badge ${l.gps_status==='success'?'badge-green':l.gps_status==='too_far'?'badge-red':'badge-amber'}">${l.gps_status}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getDistance(lat1,lon1,lat2,lon2){
+  const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// QR Verifier
+let verifyStream=null, verifyInterval=null;
+function openQRVerifier(){ document.getElementById('verify-result').innerHTML=''; openModal('modal-qrverify'); startVerifierCamera(); }
+async function startVerifierCamera(){
+  try {
+    verifyStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const vid = document.getElementById('verify-video');
+    vid.srcObject=verifyStream; await vid.play();
+    const canvas=document.createElement('canvas');
+    verifyInterval=setInterval(()=>{
+      if(!vid.videoWidth) return;
+      canvas.width=vid.videoWidth; canvas.height=vid.videoHeight;
+      const ctx=canvas.getContext('2d'); ctx.drawImage(vid,0,0);
+      const code=jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data,canvas.width,canvas.height);
+      if(code){
+        clearInterval(verifyInterval); stopStream(verifyStream);
+        const loc=locationsData.find(l=>l.qr_text===code.data||code.data.includes(l.id));
+        document.getElementById('verify-result').innerHTML = loc
+          ? `<div class="alert alert-ok">✅ Valid QR — <strong>${esc(loc.name)}</strong><br>Lat: ${loc.latitude} | Lng: ${loc.longitude}</div>`
+          : `<div class="alert alert-warn">⚠️ QR not registered: ${esc(code.data)}</div>`;
+      }
+    },200);
+  } catch(e){ document.getElementById('verify-result').innerHTML=`<div class="alert alert-err">Camera error: ${e.message}</div>`; }
+}
+function stopQRVerifier(){ clearInterval(verifyInterval); stopStream(verifyStream); verifyStream=null; closeModal('modal-qrverify'); }
+function stopStream(s){ try{if(s)s.getTracks().forEach(t=>t.stop());}catch(e){} }
+
+// ══════════════════════════════════════════════
+// QR LOGS (MASTER)
+// ══════════════════════════════════════════════
+let qrLogsData = [];
+
+async function loadQRLogs(){
+  const from=document.getElementById('qr-from')?.value;
+  const to=document.getElementById('qr-to')?.value;
+  const sup=document.getElementById('qr-sup')?.value;
+  const shift=document.getElementById('qr-shift-filter')?.value;
+
+  let query = sb.from('qr_attendance').select('*').order('scanned_at',{ascending:false}).limit(500);
+  if(from) query=query.gte('scanned_at',from);
+  if(to) query=query.lte('scanned_at',to+'T23:59:59');
+  if(sup) query=query.eq('supervisor_email',sup);
+  if(shift) query=query.eq('shift_name',shift);
+
+  const {data,error}=await query;
+  if(error){ toast('QR logs error: '+error.message,'err'); return; }
+  qrLogsData=data||[];
+
+  const tb=document.getElementById('qr-logs-table');
+  if(!tb) return;
+  if(!qrLogsData.length){ tb.innerHTML='<tr><td colspan="5" class="text-center text-muted" style="padding:32px">No scan records.</td></tr>'; return; }
+  tb.innerHTML = qrLogsData.map(l=>`
+    <tr>
+      <td class="text-sm">${fmtDateTime(l.scanned_at)}</td>
+      <td>${esc(l.supervisor_email||'—')}</td>
+      <td>${esc(l.location_name||'—')}</td>
+      <td>${esc(l.shift_name||'—')}</td>
+      <td><span class="badge ${l.gps_status==='success'?'badge-green':l.gps_status==='too_far'?'badge-red':'badge-amber'}">${l.gps_status||'—'}</span></td>
+    </tr>
+  `).join('');
+
+  // Populate supervisor filter
+  const sups=[...new Set(qrLogsData.map(l=>l.supervisor_email).filter(Boolean))];
+  const supSel=document.getElementById('qr-sup');
+  if(supSel){ const cur=supSel.value; supSel.innerHTML='<option value="">All</option>'+sups.map(s=>`<option value="${s}">${s}</option>`).join(''); supSel.value=cur; }
+}
+
+function clearQRFilters(){
+  ['qr-from','qr-to','qr-sup','qr-shift-filter'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
+  loadQRLogs();
+}
+
+function exportQRLogs(){
+  if(!qrLogsData.length){ toast('No data to export.','warn'); return; }
+  const H=['Date/Time','Supervisor','Location','Shift','GPS Status','Latitude','Longitude'];
+  const rows=qrLogsData.map(l=>[fmtDateTime(l.scanned_at),l.supervisor_email||'',l.location_name||'',l.shift_name||'',l.gps_status||'',l.latitude||'',l.longitude||''].map(v=>`"${String(v).replace(/"/g,'""')}"`));
+  downloadCSV('\uFEFF'+[H.map(h=>`"${h}"`).join(','),...rows.map(r=>r.join(','))].join('\r\n'),'qr_attendance_logs.csv');
+}
+
+// ══════════════════════════════════════════════
+// ISSUANCE
+// ══════════════════════════════════════════════
+let issuanceData = [];
+let issRows = [];
+
+async function loadIssuance(){
+  const {data,error} = await sb.from('issuance').select('*').order('issued_date',{ascending:false});
+  if(error){ toast('Issuance error: '+error.message,'err'); return; }
+  issuanceData = data||[];
+  renderIssuance();
+}
+
+function renderIssuance(){
+  const tb=document.getElementById('issuance-table');
+  if(!tb) return;
+  if(!issuanceData.length){ tb.innerHTML='<tr><td colspan="5" class="text-center text-muted" style="padding:32px">No records yet.</td></tr>'; return; }
+  tb.innerHTML = issuanceData.map(l=>`
+    <tr>
+      <td>${fmtDate(l.issued_date)}</td>
+      <td><span class="badge badge-blue">${esc(l.department)}</span></td>
+      <td class="text-sm">${(l.items||[]).map(i=>`${esc(i.name||'')} × ${i.quantity} ${esc(i.unit||'')}`).join(', ')}</td>
+      <td class="text-muted">${esc(l.notes||'—')}</td>
+      <td class="text-sm text-muted">${esc(l.issued_by_email||'—')}</td>
+    </tr>
+  `).join('');
+}
+
+async function loadSupIssuance(){
+  const {data,error} = await sb.from('issuance').select('*').eq('issued_by_id',currentUser.id).order('issued_date',{ascending:false});
+  if(error) return;
+  const tb=document.getElementById('sup-issuance-table');
+  if(!tb) return;
+  if(!data||!data.length){ tb.innerHTML='<tr><td colspan="4" class="text-center text-muted" style="padding:32px">No records yet.</td></tr>'; return; }
+  tb.innerHTML = data.map(l=>`
+    <tr>
+      <td>${fmtDate(l.issued_date)}</td>
+      <td><span class="badge badge-blue">${esc(l.department)}</span></td>
+      <td class="text-sm">${(l.items||[]).map(i=>`${esc(i.name||'')} × ${i.quantity}`).join(', ')}</td>
+      <td class="text-muted">${esc(l.notes||'—')}</td>
+    </tr>
+  `).join('');
+}
+
+function openIssuanceModal(){
+  issRows=[{inv_id:'',qty:1}];
+  document.getElementById('iss-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('iss-notes').value='';
+  document.getElementById('iss-dept').value='';
+  refreshDeptSelects();
+  renderIssRows();
+  openModal('modal-issuance');
+}
+
+function addIssRow(){ issRows.push({inv_id:'',qty:1}); renderIssRows(); }
+
+function renderIssRows(){
+  const opts = inventoryData.map(i=>`<option value="${i.id}">${esc(i.name)} (${esc(i.unit)})</option>`).join('');
+  document.getElementById('iss-rows').innerHTML = issRows.map((r,i)=>`
+    <div class="form-grid form-grid-2 mb-2" style="align-items:end;gap:8px">
+      <select onchange="issRows[${i}].inv_id=this.value" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px;width:100%">
+        <option value="">Select item…</option>${opts}
+      </select>
+      <div class="flex gap-2">
+        <input type="number" min="1" value="${r.qty}" oninput="issRows[${i}].qty=parseInt(this.value)||1" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:8px;width:80px;font-size:13px">
+        ${issRows.length>1?`<button class="btn btn-danger btn-xs" onclick="issRows.splice(${i},1);renderIssRows()">✕</button>`:''}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function saveIssuance(){
+  const department=document.getElementById('iss-dept').value;
+  const issued_date=document.getElementById('iss-date').value;
+  const notes=document.getElementById('iss-notes').value.trim();
+  if(!department||!issued_date){ toast('Department and date required.','err'); return; }
+  const validRows=issRows.filter(r=>r.inv_id);
+  if(!validRows.length){ toast('Select at least one item.','err'); return; }
+  const items=validRows.map(r=>{ const item=inventoryData.find(i=>i.id===r.inv_id); return{inventory_id:r.inv_id,name:item?.name,quantity:r.qty,unit:item?.unit}; });
+  loading(true);
+  try {
+    const {error} = await sb.from('issuance').insert({
+      department, issued_date, items, notes,
+      issued_by_id:currentUser.id, issued_by_email:currentUser.email,
+      created_at:new Date().toISOString()
+    });
+    if(error) throw error;
+    closeModal('modal-issuance');
+    await loadIssuance();
+    await loadSupIssuance();
+    toast('Issuance recorded!');
+  } catch(e){ toast('Error: '+e.message,'err'); }
+  finally { loading(false); }
+}
+
+function exportIssuance(){
+  if(!issuanceData.length){ toast('No data.','warn'); return; }
+  const H=['Date','Department','Items','Notes','Issued By'];
+  const rows=issuanceData.map(l=>[fmtDate(l.issued_date),l.department,(l.items||[]).map(i=>`${i.name} x${i.quantity} ${i.unit}`).join('; '),l.notes||'',l.issued_by_email||''].map(v=>`"${String(v).replace(/"/g,'""')}"`));
+  downloadCSV('\uFEFF'+[H.map(h=>`"${h}"`).join(','),...rows.map(r=>r.join(','))].join('\r\n'),'issuance_logs.csv');
+}
+
+// ══════════════════════════════════════════════
+// ANALYTICS
+// ══════════════════════════════════════════════
+let chartInstances=[];
+function toggleCustomDates(){
+  const p=document.getElementById('an-period').value;
+  document.getElementById('an-from-wrap').style.display=p==='custom'?'block':'none';
+  document.getElementById('an-to-wrap').style.display=p==='custom'?'block':'none';
+}
+
+async function loadAnalytics(){
+  let query = sb.from('issuance').select('*');
+  const period=document.getElementById('an-period').value;
+  const dept=document.getElementById('an-dept').value;
+  const item=document.getElementById('an-item')?.value||'all';
+  const now=new Date();
+  if(period==='day') query=query.eq('issued_date',now.toISOString().split('T')[0]);
+  else if(period==='week') query=query.gte('issued_date',new Date(now-7*86400000).toISOString().split('T')[0]);
+  else if(period==='month') query=query.gte('issued_date',new Date(now-30*86400000).toISOString().split('T')[0]);
+  else if(period==='custom'){
+    const from=document.getElementById('an-from').value;
+    const to=document.getElementById('an-to').value;
+    if(from)query=query.gte('issued_date',from);
+    if(to)query=query.lte('issued_date',to);
+  }
+  if(dept!=='all') query=query.eq('department',dept);
+
+  loading(true);
+  const {data,error}=await query;
+  loading(false);
+  if(error){ toast('Analytics error: '+error.message,'err'); return; }
+  let logs=data||[];
+  // Filter by item if selected
+  if(item!=='all'){
+    logs=logs.map(l=>({
+      ...l,
+      items:(l.items||[]).filter(i=>i.name===item)
+    })).filter(l=>l.items.length>0);
+  }
+
+  const totalQty=logs.reduce((s,l)=>s+(l.items||[]).reduce((a,i)=>a+(i.quantity||0),0),0);
+  const byDept={},byItem={},byDate={};
+  logs.forEach(l=>{
+    byDept[l.department]=(byDept[l.department]||0)+(l.items||[]).reduce((a,i)=>a+i.quantity,0);
+    (l.items||[]).forEach(i=>{byItem[i.name||'?']=(byItem[i.name||'?']||0)+i.quantity;});
+    byDate[l.issued_date]=(byDate[l.issued_date]||0)+(l.items||[]).reduce((a,i)=>a+i.quantity,0);
+  });
+  const depts=Object.entries(byDept).sort((a,b)=>b[1]-a[1]);
+  const items=Object.entries(byItem).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const dates=Object.entries(byDate).sort((a,b)=>a[0].localeCompare(b[0]));
+
+  chartInstances.forEach(c=>c.destroy()); chartInstances=[];
+  document.getElementById('analytics-body').innerHTML=`
+    <div class="grid-4 mb-5">
+      <div class="kpi-box" style="background:#eff6ff;border-color:#bfdbfe"><div class="kpi-val" style="color:#1e40af">${logs.length}</div><div class="kpi-lbl" style="color:#1e40af">Total Logs</div></div>
+      <div class="kpi-box" style="background:#f0fdf4;border-color:#bbf7d0"><div class="kpi-val" style="color:#15803d">${totalQty}</div><div class="kpi-lbl" style="color:#15803d">Total Quantity</div></div>
+      <div class="kpi-box" style="background:#fffbeb;border-color:#fde68a"><div class="kpi-val" style="color:#b45309">${depts.length}</div><div class="kpi-lbl" style="color:#b45309">Departments</div></div>
+      <div class="kpi-box" style="background:#fef2f2;border-color:#fecaca"><div class="kpi-val" style="color:#dc2626">${items.length}</div><div class="kpi-lbl" style="color:#dc2626">Unique Items</div></div>
+    </div>
+    ${!logs.length?'<div class="empty"><div class="empty-icon">📊</div><div class="empty-text">No data for selected filters.</div></div>':`
+    <div class="grid-2" style="gap:20px">
+      <div class="chart-box"><div class="chart-title">Issuance by Department</div><canvas id="ch-dept" height="220"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Top Items Issued</div><canvas id="ch-item" height="220"></canvas></div>
+      <div class="chart-box" style="grid-column:span 2"><div class="chart-title">Issuance Over Time</div><canvas id="ch-date" height="140"></canvas></div>
+    </div>`}
+  `;
+  if(logs.length){
+    chartInstances.push(new Chart(document.getElementById('ch-dept'),{type:'bar',data:{labels:depts.map(d=>d[0]),datasets:[{data:depts.map(d=>d[1]),backgroundColor:'#1e40af',borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}}));
+    chartInstances.push(new Chart(document.getElementById('ch-item'),{type:'bar',data:{labels:items.map(i=>i[0]),datasets:[{data:items.map(i=>i[1]),backgroundColor:'#059669',borderRadius:6}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}}}}));
+    chartInstances.push(new Chart(document.getElementById('ch-date'),{type:'line',data:{labels:dates.map(d=>d[0]),datasets:[{data:dates.map(d=>d[1]),borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.08)',tension:.4,fill:true,pointRadius:3}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}}));
+  }
+}
+
+// ══════════════════════════════════════════════
+// USERS
+// ══════════════════════════════════════════════
+let usersData = [];
+
+async function loadUsers(){
+  const {data,error} = await sb.from('users').select('*').order('created_at');
+  if(error){ toast('Users error: '+error.message,'err'); return; }
+  usersData = data||[];
+  renderUsers();
+}
+
+function renderUsers(){
+  const tb = document.getElementById('users-table');
+  if(!tb) return;
+  tb.innerHTML = usersData.map(u=>`
+    <tr>
+      <td>${esc(u.email)}</td>
+      <td><span class="badge ${u.role==='master'?'badge-purple':'badge-blue'}">${u.role}</span></td>
+      <td>${fmtDate(u.created_at)}</td>
+      <td>${u.id!==currentUser.id?`<button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}')">Delete</button>`:'<span class="text-xs text-muted">You</span>'}</td>
+    </tr>
+  `).join('');
+}
+
+function openUserModal(){ document.getElementById('u-email').value=''; document.getElementById('u-pass').value=''; document.getElementById('u-role').value='supervisor'; openModal('modal-user'); }
+
+async function saveUser(){
+  const email=document.getElementById('u-email').value.trim();
+  const password=document.getElementById('u-pass').value;
+  const role=document.getElementById('u-role').value;
+  if(!email||!password){ toast('Email and password required.','err'); return; }
+  if(password.length < 6){ toast('Password must be at least 6 characters.','err'); return; }
+  loading(true);
+  try {
+    // Sign up new user in Supabase Auth
+    const {data:authData, error:authError} = await sb.auth.signUp({
+      email, password,
+      options:{ data:{ role } }
+    });
+    if(authError) throw authError;
+    const userId = authData?.user?.id;
+    if(!userId) throw new Error('User creation failed — no ID returned.');
+    // Insert profile row
+    const {error:dbError} = await sb.from('users').insert({
+      id:userId, email, role, created_at:new Date().toISOString()
+    });
+    if(dbError && !dbError.message.includes('duplicate')) throw dbError;
+    closeModal('modal-user');
+    await loadUsers();
+    if(!authData?.session){
+      toast('User created! Disable email confirmation in Supabase so they can log in directly.','info');
+    } else {
+      toast('Supervisor created successfully!');
+    }
+  } catch(e){
+    toast('Error: '+e.message,'err');
+  } finally { loading(false); }
+}
+
+async function deleteUser(id){
+  if(id===currentUser.id){ toast("Can't delete yourself.",'warn'); return; }
+  if(!confirm('Delete user?')) return;
+  const {error} = await sb.from('users').delete().eq('id',id);
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  await loadUsers();
+  toast('User deleted.');
+}
+
+// ══════════════════════════════════════════════
+// BULK UPLOAD
+// ══════════════════════════════════════════════
+let bulkTarget = '';
+const BULK_CONFIG = {
+  inventory: {
+    title: 'Bulk Upload Inventory',
+    hint: 'Upload multiple inventory items. Required: name, quantity, unit. Optional: description.',
+    columns: 'name (required)\nquantity (required, number)\nunit (required, e.g. Litres / Nos / Pairs)\ndescription (optional)',
+    sample: 'name,quantity,unit,description\nPhenyl,50,Litres,Floor cleaner\nBrooms,40,Nos,\nMops,25,Nos,Cotton mops\nHand Gloves,100,Pairs,Rubber gloves',
+    headers: ['name','quantity','unit','description'],
+    required: ['name','quantity','unit']
+  },
+  departments: {
+    title: 'Bulk Upload Departments',
+    hint: 'Upload multiple departments. Only one column needed: name.',
+    columns: 'name (required)',
+    sample: 'name\nOPD Block\nIPD Block\nEmergency Ward\nOT Complex\nCafeteria',
+    headers: ['name'],
+    required: ['name']
+  },
+  staff: {
+    title: 'Bulk Upload Staff',
+    hint: 'Upload multiple staff. Required: name, attendance_id. Optional: designation, department, type.',
+    columns: 'name (required)\nattendance_id (required, e.g. HK001)\ndesignation (optional)\ndepartment (optional)\ntype (optional: regular or reliever)',
+    sample: 'name,attendance_id,designation,department,type\nRavi Kumar,HK001,Sweeper,OPD Block,regular\nPriya Devi,HK002,Sanitation Worker,IPD Block,regular\nMuthu S,HK003,Sweeper,Cafeteria,reliever',
+    headers: ['name','attendance_id','designation','department','type'],
+    required: ['name','attendance_id']
+  }
+};
+
+let bulkParsedRows = [];
+
+function openBulkUpload(target) {
+  bulkTarget = target;
+  bulkParsedRows = [];
+  const cfg = BULK_CONFIG[target];
+  document.getElementById('bulk-title').textContent = cfg.title;
+  document.getElementById('bulk-hint').textContent = cfg.hint;
+  document.getElementById('bulk-columns').textContent = cfg.columns;
+  document.getElementById('bulk-csv').value = cfg.sample;
+  document.getElementById('bulk-preview').innerHTML = '';
+  document.getElementById('bulk-file').value = '';
+  openModal('modal-bulk');
+}
+
+function downloadTemplate(target) {
+  const cfg = BULK_CONFIG[target];
+  if(!cfg) return;
+  downloadCSV('\uFEFF' + cfg.sample, target + '_template.csv');
+  toast('Template downloaded!');
+}
+
+function readBulkFile(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { document.getElementById('bulk-csv').value = e.target.result; previewBulk(); };
+  reader.readAsText(file);
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  if(lines.length < 2) return { headers: [], rows: [] };
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/\s+/g,'_'));
+  const rows = lines.slice(1).map(line => {
+    const vals = [];
+    let cur = '', inQ = false;
+    for(let i=0; i<line.length; i++) {
+      if(line[i]==='"'){inQ=!inQ;continue;}
+      if(line[i]===',' && !inQ){vals.push(cur.trim());cur='';continue;}
+      cur += line[i];
+    }
+    vals.push(cur.trim());
+    const obj = {};
+    headers.forEach((h,i) => obj[h] = vals[i]||'');
+    return obj;
+  });
+  return { headers, rows };
+}
+
+function previewBulk() {
+  const csv = document.getElementById('bulk-csv').value;
+  const cfg = BULK_CONFIG[bulkTarget];
+  const { headers, rows } = parseCSV(csv);
+  const preview = document.getElementById('bulk-preview');
+  if(!rows.length){ preview.innerHTML = '<div class="alert alert-err">No data rows found. Check your CSV format.</div>'; return; }
+  const missing = cfg.required.filter(r => !headers.includes(r));
+  if(missing.length){ preview.innerHTML = `<div class="alert alert-err">Missing required columns: <strong>${missing.join(', ')}</strong></div>`; return; }
+  let valid = 0, errors = [];
+  bulkParsedRows = [];
+  rows.forEach((row, i) => {
+    const rowErrors = [];
+    cfg.required.forEach(req => { if(!row[req]) rowErrors.push(req+' is empty'); });
+    if(bulkTarget==='inventory' && isNaN(parseFloat(row.quantity))) rowErrors.push('quantity must be a number');
+    if(bulkTarget==='staff' && row.type && !['regular','reliever'].includes(row.type.toLowerCase())) rowErrors.push('type must be regular or reliever');
+    if(rowErrors.length) errors.push('Row '+(i+2)+': '+rowErrors.join(', '));
+    else { bulkParsedRows.push(row); valid++; }
+  });
+  let html = `<div class="alert ${errors.length?'alert-warn':'alert-ok'} mb-3">✅ <strong>${valid} valid rows</strong> ready to upload${errors.length?' · ⚠️ '+errors.length+' rows with errors (skipped)':''}</div>`;
+  if(errors.length) html += `<div class="alert alert-err mb-3" style="font-size:12px">${errors.slice(0,5).map(e=>esc(e)).join('<br>')}${errors.length>5?'<br>...and '+(errors.length-5)+' more':''}</div>`;
+  const cols = cfg.headers.slice(0,4);
+  html += `<div class="tbl-wrap"><table><thead><tr>${cols.map(h=>'<th>'+h+'</th>').join('')}</tr></thead><tbody>`;
+  bulkParsedRows.slice(0,6).forEach(row => { html += '<tr>'+cols.map(h=>'<td>'+esc(row[h]||'—')+'</td>').join('')+'</tr>'; });
+  if(bulkParsedRows.length>6) html += `<tr><td colspan="${cols.length}" class="text-center text-muted">...and ${bulkParsedRows.length-6} more rows</td></tr>`;
+  html += '</tbody></table></div>';
+  preview.innerHTML = html;
+}
+
+async function confirmBulkUpload() {
+  if(!bulkParsedRows.length){ previewBulk(); return; }
+  if(!confirm('Upload '+bulkParsedRows.length+' '+bulkTarget+' records?')) return;
+  loading(true);
+  try {
+    let inserted=0, skipped=0;
+    if(bulkTarget==='inventory') {
+      const rows = bulkParsedRows.map(r=>({name:r.name.trim(),quantity:parseInt(r.quantity)||0,unit:r.unit.trim(),description:r.description||''}));
+      const {error} = await sb.from('inventory').insert(rows);
+      if(error) throw error;
+      inserted = rows.length;
+      await loadInventory();
+    } else if(bulkTarget==='departments') {
+      for(const r of bulkParsedRows) {
+        const {error} = await sb.from('departments').insert({name:r.name.trim()});
+        if(error && error.message.includes('duplicate')) skipped++;
+        else if(error) throw error;
+        else inserted++;
+      }
+      await loadDepartments();
+    } else if(bulkTarget==='staff') {
+      for(const r of bulkParsedRows) {
+        const {error} = await sb.from('staff').insert({name:r.name.trim(),attendance_id:r.attendance_id.trim(),designation:r.designation||'',department:r.department||'',type:r.type?.toLowerCase()==='reliever'?'reliever':'regular'});
+        if(error && (error.message.includes('duplicate')||error.message.includes('unique'))) skipped++;
+        else if(error) throw error;
+        else inserted++;
+      }
+      await loadStaff();
+    }
+    closeModal('modal-bulk');
+    bulkParsedRows = [];
+    toast('✅ '+inserted+' records uploaded'+(skipped?' ('+skipped+' duplicates skipped)':'')+'!');
+  } catch(e){ toast('Upload error: '+e.message,'err'); }
+  finally { loading(false); }
+}
+
+// ══════════════════════════════════════════════
+// ANALYTICS ITEM FILTER
+// ══════════════════════════════════════════════
+function refreshAnItemSelect() {
+  const el = document.getElementById('an-item');
+  if(!el) return;
+  const cur = el.value;
+  const items = [...new Set(inventoryData.map(i=>i.name))].sort();
+  el.innerHTML = '<option value="all">All items</option>'+items.map(i=>`<option value="${esc(i)}">${esc(i)}</option>`).join('');
+  if(cur) el.value = cur;
+}
+
+</script>
+
+<!-- BULK UPLOAD MODAL -->
+<div class="modal-bg" id="modal-bulk"><div class="modal" style="max-width:560px">
+  <div class="modal-hd"><span class="modal-title" id="bulk-title">Bulk Upload</span><button class="btn-close" onclick="closeModal('modal-bulk')">✕</button></div>
+  <div class="modal-body">
+    <div id="bulk-hint" class="alert alert-info mb-3"></div>
+    <div class="form-bg mb-3">
+      <div class="font-bold text-sm mb-2">CSV Format / Columns:</div>
+      <div id="bulk-columns" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#475569;line-height:1.8"></div>
+    </div>
+    <div class="form-field mb-3">
+      <label>Paste CSV data here (or upload file below)</label>
+      <textarea id="bulk-csv" rows="8" style="font-family:'JetBrains Mono',monospace;font-size:12px;resize:vertical" placeholder="name,quantity,unit,description&#10;Phenyl,50,Litres,Floor cleaner&#10;Brooms,40,Nos,"></textarea>
+    </div>
+    <div class="form-field">
+      <label>Or upload CSV / Excel file</label>
+      <input type="file" id="bulk-file" accept=".csv,.txt" onchange="readBulkFile(this)">
+    </div>
+    <div id="bulk-preview" class="mt-3"></div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-outline" onclick="closeModal('modal-bulk')">Cancel</button>
+    <button class="btn btn-outline" onclick="previewBulk()">👁 Preview</button>
+    <button class="btn btn-primary" onclick="confirmBulkUpload()">⬆ Upload All</button>
+  </div>
+</div></div>
+</body>
+</html>
