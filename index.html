@@ -368,9 +368,12 @@ tbody tr:hover td{background:#f8fafc}
             </div>
           </div>
           <div class="card mt-4">
-            <div class="card-hd"><div><div class="card-title">🏗️ Blocks</div></div><button class="btn btn-primary btn-sm" onclick="openBlockModal()">+ Add Block</button></div>
+            <div class="card-hd">
+              <div><div class="card-title">🏗️ Blocks & Department Assignment</div><div class="card-desc">Assign supervisors to blocks and departments to blocks</div></div>
+              <button class="btn btn-primary btn-sm" onclick="openBlockModal()">+ Add Block</button>
+            </div>
             <div class="card-body" style="padding:0">
-              <div class="tbl-wrap"><table><thead><tr><th>Block Name</th><th>Supervisor</th><th>Actions</th></tr></thead><tbody id="blocks-table"></tbody></table></div>
+              <div class="tbl-wrap"><table><thead><tr><th>Block Name</th><th>Assigned Supervisor</th><th>Departments</th><th>Actions</th></tr></thead><tbody id="blocks-table"></tbody></table></div>
             </div>
           </div>
         </div>
@@ -458,7 +461,7 @@ tbody tr:hover td{background:#f8fafc}
               <button class="btn btn-primary btn-sm" onclick="openUserModal()">+ Add Supervisor</button>
             </div>
             <div class="card-body" style="padding:0">
-              <div class="tbl-wrap"><table><thead><tr><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="users-table"></tbody></table></div>
+              <div class="tbl-wrap"><table><thead><tr><th>Email</th><th>Role</th><th>Password</th><th>Created</th><th>Actions</th></tr></thead><tbody id="users-table"></tbody></table></div>
             </div>
           </div>
         </div>
@@ -500,71 +503,68 @@ tbody tr:hover td{background:#f8fafc}
           </div>
         </div>
         <div id="sup-qr" style="display:none">
-          <!-- PHOTO CHECK-IN -->
-          <div class="card mb-4">
+          <!-- STEP 1: Select Block & Department -->
+          <div class="card mb-4" id="ci-step1">
             <div class="card-hd">
-              <div><div class="card-title">📸 Location Photo Check-in</div><div class="card-desc">Take a photo with GPS + timestamp — works offline too</div></div>
-              <div id="offline-badge" style="display:none"><span class="badge badge-amber">📵 Offline — will sync</span></div>
+              <div><div class="card-title">📸 Location Photo Check-in</div><div class="card-desc">Works offline — syncs when signal returns</div></div>
+              <div id="offline-badge" style="display:none"><span class="badge badge-amber">📵 Offline</span></div>
             </div>
             <div class="card-body">
-              <div class="form-grid form-grid-2 mb-4">
-                <div class="form-field"><label>Select Location *</label><select id="photo-location"><option value="">Select location…</option></select></div>
+              <div class="form-grid form-grid-2 mb-3">
+                <div class="form-field"><label>My Block</label><div id="my-block-display" class="inp" style="background:#f8fafc;color:#475569;padding:10px 12px">Loading…</div></div>
                 <div class="form-field"><label>Shift *</label><select id="qr-scan-shift"><option value="">Select shift…</option></select></div>
               </div>
-              <div class="form-field mb-3"><label>Remarks *</label><textarea id="photo-remarks" rows="2" placeholder="e.g. Cleaned, mopped, bins emptied…"></textarea></div>
-              <!-- Camera -->
-              <div id="photo-camera-wrap" style="display:none;margin-bottom:16px">
-                <div style="position:relative;width:100%;max-width:400px;border-radius:14px;overflow:hidden;background:#000;margin-bottom:10px">
-                  <video id="photo-video" playsinline autoplay muted style="width:100%;display:block"></video>
-                  <div id="photo-gps-overlay" style="position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;font-family:monospace">📍 Getting GPS…</div>
-                  <div id="photo-time-overlay" style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;font-family:monospace"></div>
-                </div>
-                <div class="flex gap-2">
-                  <button class="btn btn-primary" onclick="capturePhoto()">📸 Capture Photo</button>
-                  <button class="btn btn-danger btn-sm" onclick="stopPhotoCamera()">✕ Cancel</button>
-                </div>
-              </div>
-              <!-- Preview -->
-              <div id="photo-preview-wrap" style="display:none;margin-bottom:16px">
-                <div style="position:relative;width:100%;max-width:400px;border-radius:14px;overflow:hidden;margin-bottom:10px">
-                  <canvas id="photo-canvas" style="width:100%;border-radius:14px;display:block"></canvas>
-                </div>
-                <div class="flex gap-2">
-                  <button class="btn btn-outline btn-sm" onclick="retakePhoto()">🔄 Retake</button>
-                </div>
-              </div>
-              <!-- Actions -->
-              <div class="flex gap-2 flex-wrap" id="photo-actions">
-                <button class="btn btn-primary" onclick="openPhotoCamera()" id="btn-open-camera">📷 Open Camera</button>
-                <button class="btn btn-success" onclick="submitPhotoCheckin()" id="btn-submit-photo" style="display:none">✅ Submit Check-in</button>
-              </div>
-              <div id="photo-status" style="display:none" class="alert mt-3"></div>
+              <div class="form-field mb-3"><label>Department *</label><select id="ci-department"><option value="">Select department…</option></select></div>
+              <button class="btn btn-primary btn-sm" onclick="startCheckinSession()">▶ Start Check-in</button>
             </div>
           </div>
-          <!-- PENDING OFFLINE SUBMISSIONS -->
-          <div class="card mb-4" id="offline-pending-card" style="display:none">
-            <div class="card-hd"><div><div class="card-title">⏳ Pending Submissions</div><div class="card-desc">Offline check-ins waiting to sync</div></div>
+
+          <!-- STEP 2: Photo capture session -->
+          <div id="ci-step2" style="display:none">
+            <div class="card mb-3" style="background:#eff6ff;border-color:#bfdbfe">
+              <div class="card-body" style="padding:14px 18px">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <div class="font-bold" style="font-size:15px" id="ci-session-title">Check-in Session</div>
+                    <div class="text-sm text-muted" id="ci-session-sub"></div>
+                  </div>
+                  <button class="btn btn-outline btn-sm" onclick="endCheckinSession()">✅ Done & Submit All</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Photo rows -->
+            <div id="ci-photo-rows"></div>
+
+            <!-- Add row button -->
+            <button class="btn btn-outline w-full mt-3" onclick="addPhotoRow()" style="border-style:dashed;border-color:#93c5fd;color:#1e40af">
+              + Add Another Location (Toilet 2, Ward 2, Nurses Room…)
+            </button>
+          </div>
+
+          <!-- PENDING OFFLINE -->
+          <div class="card mb-4 mt-4" id="offline-pending-card" style="display:none">
+            <div class="card-hd"><div><div class="card-title">⏳ Pending — Offline Submissions</div></div>
               <button class="btn btn-primary btn-sm" onclick="syncOfflineCheckins()">☁️ Sync Now</button>
             </div>
             <div class="card-body" style="padding:0">
-              <div class="tbl-wrap"><table><thead><tr><th>Time</th><th>Location</th><th>Remarks</th><th>Status</th></tr></thead><tbody id="offline-pending-table"></tbody></table></div>
+              <div class="tbl-wrap"><table><thead><tr><th>Time</th><th>Block</th><th>Dept</th><th>Spot</th><th>Status</th></tr></thead><tbody id="offline-pending-table"></tbody></table></div>
             </div>
           </div>
-          <!-- PAST CHECK-INS -->
-          <div class="card">
+
+          <!-- HISTORY -->
+          <div class="card mt-4">
             <div class="card-hd"><div><div class="card-title">📋 My Check-in History</div></div>
               <button class="btn btn-outline btn-sm" onclick="loadPhotoCheckins()">🔄 Refresh</button>
             </div>
             <div class="card-body" style="padding:0">
-              <div class="tbl-wrap"><table><thead><tr><th>Date/Time</th><th>Location</th><th>Shift</th><th>Remarks</th><th>Photo</th><th>GPS</th></tr></thead><tbody id="photo-checkin-history"></tbody></table></div>
+              <div class="tbl-wrap"><table><thead><tr><th>Date/Time</th><th>Block</th><th>Dept</th><th>Spot</th><th>Remarks</th><th>Photos</th></tr></thead><tbody id="photo-checkin-history"></tbody></table></div>
             </div>
           </div>
-          <!-- Hidden QR elements for backward compat -->
+
           <div style="display:none">
             <div id="qr-camera-wrap"><video id="qr-video" playsinline autoplay muted></video></div>
-            <div id="qr-idle"></div>
-            <div id="qr-msg"></div>
-            <div id="qr-scan-log"></div>
+            <div id="qr-idle"></div><div id="qr-msg"></div><div id="qr-scan-log"></div>
           </div>
         </div>
       </div>
@@ -659,13 +659,20 @@ tbody tr:hover td{background:#f8fafc}
   <div class="modal-ft"><button class="btn btn-outline" onclick="closeModal('modal-user')">Cancel</button><button class="btn btn-primary" onclick="saveUser()">Create</button></div>
 </div></div>
 
-<div class="modal-bg" id="modal-block"><div class="modal">
-  <div class="modal-hd"><span class="modal-title">Add Block</span><button class="btn-close" onclick="closeModal('modal-block')">✕</button></div>
+<div class="modal-bg" id="modal-block"><div class="modal" style="max-width:560px">
+  <div class="modal-hd"><span class="modal-title" id="block-modal-title">Add Block</span><button class="btn-close" onclick="closeModal('modal-block')">✕</button></div>
   <div class="modal-body"><div class="form-grid">
-    <div class="form-field"><label>Block Name *</label><input type="text" id="block-name"></div>
-    <div class="form-field"><label>Supervisor</label><select id="block-sup"><option value="">None</option></select></div>
+    <div class="form-field"><label>Block Name *</label><input type="text" id="block-name" placeholder="e.g. Block A, Ground Floor"></div>
+    <div class="form-field"><label>Assigned Supervisor</label><select id="block-sup"><option value="">None</option></select></div>
+    <div class="form-field">
+      <label>Assign Departments</label>
+      <div style="border:1.5px solid #e2e8f0;border-radius:8px;padding:10px;max-height:200px;overflow-y:auto" id="block-dept-list">
+        <div class="text-muted text-sm">Loading departments…</div>
+      </div>
+      <div class="text-xs text-muted mt-1">Supervisors will visit these departments during check-in</div>
+    </div>
   </div></div>
-  <div class="modal-ft"><button class="btn btn-outline" onclick="closeModal('modal-block')">Cancel</button><button class="btn btn-primary" onclick="saveBlock()">Save</button></div>
+  <div class="modal-ft"><button class="btn btn-outline" onclick="closeModal('modal-block')">Cancel</button><button class="btn btn-primary" onclick="saveBlock()">Save Block</button></div>
 </div></div>
 
 <div class="modal-bg" id="modal-assign"><div class="modal">
@@ -1788,14 +1795,36 @@ async function loadUsers(){
 function renderUsers(){
   const tb = document.getElementById('users-table');
   if(!tb) return;
-  tb.innerHTML = usersData.map(u=>`
-    <tr>
+  tb.innerHTML = usersData.map(u=>{
+    const savedPw = localStorage.getItem('hk_pw_'+u.id)||'';
+    const pwCell = savedPw
+      ? `<span id="pw-${u.id}" style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px">••••••••</span>
+         <button onclick="togglePwDisplay('${u.id}','${savedPw}')" style="background:none;border:none;cursor:pointer;font-size:13px;margin-left:4px;color:#64748b" title="Show/Hide">👁</button>
+         <button onclick="copyPw('${savedPw}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:#64748b" title="Copy">📋</button>`
+      : `<button class="btn btn-outline btn-xs" onclick="openResetPwModal('${u.id}','${esc(u.email)}')">Reset</button>`;
+    return `<tr>
       <td>${esc(u.email)}</td>
       <td><span class="badge ${u.role==='master'?'badge-purple':'badge-blue'}">${u.role}</span></td>
+      <td>${pwCell}</td>
       <td>${fmtDate(u.created_at)}</td>
-      <td>${u.id!==currentUser.id?`<button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}')">Delete</button>`:'<span class="text-xs text-muted">You</span>'}</td>
-    </tr>
-  `).join('');
+      <td>
+        <div class="flex gap-2">
+          <button class="btn btn-outline btn-xs" onclick="openResetPwModal('${u.id}','${esc(u.email)}')">🔑 Reset PW</button>
+          ${u.id!==currentUser.id?`<button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}')">Delete</button>`:'<span class="text-xs text-muted">You</span>'}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function togglePwDisplay(userId, pw){
+  const el = document.getElementById('pw-'+userId);
+  if(!el) return;
+  el.textContent = el.textContent.includes('•') ? pw : '••••••••';
+}
+
+function copyPw(pw){
+  navigator.clipboard.writeText(pw).then(()=>toast('Password copied!'));
 }
 
 function openUserModal(){ document.getElementById('u-email').value=''; document.getElementById('u-pass').value=''; document.getElementById('u-role').value='supervisor'; openModal('modal-user'); }
@@ -1821,6 +1850,8 @@ async function saveUser(){
       id:userId, email, role, created_at:new Date().toISOString()
     });
     if(dbError && !dbError.message.includes('duplicate')) throw dbError;
+    // Store password locally for viewing later
+    if(userId) localStorage.setItem('hk_pw_'+userId, password);
     closeModal('modal-user');
     await loadUsers();
     if(!authData?.session){
@@ -2037,12 +2068,18 @@ function getOfflineQueue() {
 }
 function saveOfflineQueue(q) { localStorage.setItem(OFFLINE_KEY, JSON.stringify(q)); }
 
-// Populate location select in photo check-in
+// Populate check-in UI for supervisor
 function populatePhotoLocations() {
-  const sel = document.getElementById('photo-location');
-  if(!sel) return;
-  sel.innerHTML = '<option value="">Select location…</option>' +
-    locationsData.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join('');
+  // Show my block
+  const myBlock = getMyBlock();
+  const blockDisp = document.getElementById('my-block-display');
+  if(blockDisp) blockDisp.textContent = myBlock ? myBlock.name : 'No block assigned — contact master';
+  // Populate departments from my block
+  const deptSel = document.getElementById('ci-department');
+  if(deptSel){
+    const depts = myBlock?.departments||departmentsData.map(d=>d.name);
+    deptSel.innerHTML = '<option value="">Select department…</option>' + depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  }
 }
 
 // Online/offline detection
@@ -2054,241 +2091,415 @@ function updateOnlineStatus() {
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 
-async function openPhotoCamera() {
-  const locId = document.getElementById('photo-location')?.value;
-  const shiftId = document.getElementById('qr-scan-shift')?.value;
-  if(!locId){ toast('Select a location first.','warn'); return; }
-  if(!shiftId){ toast('Select a shift first.','warn'); return; }
+// ══════════════════════════════════════════════
+// PHOTO CHECK-IN SESSION SYSTEM
+// ══════════════════════════════════════════════
+let ciSession = null; // current session: {block, department, shift, rows:[]}
+let photoRowStreams = {}; // rowId -> {backStream, frontStream}
+let photoRowGPS = {};
+let photoClockIntervals = {};
 
+function startCheckinSession(){
+  const dept = document.getElementById('ci-department').value;
+  const shiftId = document.getElementById('qr-scan-shift').value;
+  const myBlock = getMyBlock();
+  if(!dept){ toast('Select a department.','warn'); return; }
+  if(!shiftId){ toast('Select a shift.','warn'); return; }
+  const shift = shiftsData.find(s=>s.id===shiftId);
+  ciSession = { block_id: myBlock?.id||null, block_name: myBlock?.name||'Unassigned', department: dept, shift_id: shiftId, shift_name: shift?.name||'', rows:[], started_at: new Date().toISOString() };
+  document.getElementById('ci-step1').style.display='none';
+  document.getElementById('ci-step2').style.display='block';
+  document.getElementById('ci-session-title').textContent = `${myBlock?.name||''} — ${dept}`;
+  document.getElementById('ci-session-sub').textContent = `Shift: ${shift?.name||''} | ${new Date().toLocaleString('en-GB')}`;
+  document.getElementById('ci-photo-rows').innerHTML='';
+  addPhotoRow('Ward');
+}
+
+function addPhotoRow(defaultName=''){
+  const rowId = 'row_'+Date.now();
+  ciSession.rows.push({id:rowId, name:defaultName, back_photo:null, front_photo:null, remarks:'', captured:false});
+  const idx = ciSession.rows.length-1;
+  const div = document.createElement('div');
+  div.id = 'ci-row-'+rowId;
+  div.className = 'card mb-3';
+  div.innerHTML = `
+    <div class="card-body" style="padding:16px">
+      <div class="flex justify-between items-center mb-3">
+        <div class="form-field" style="margin:0;flex:1;max-width:240px">
+          <label>Spot Name</label>
+          <input type="text" value="${esc(defaultName)}" placeholder="e.g. Ward, Toilet 1, Nurses Room"
+            oninput="ciSession.rows[${idx}].name=this.value"
+            style="border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:14px;width:100%">
+        </div>
+        <button onclick="removePhotoRow('${rowId}')" class="btn btn-danger btn-xs" style="margin-top:20px">✕ Remove</button>
+      </div>
+      <div class="form-field mb-3">
+        <label>Remarks</label>
+        <input type="text" placeholder="e.g. Cleaned and mopped" oninput="ciSession.rows[${idx}].remarks=this.value"
+          style="border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:14px;width:100%">
+      </div>
+      <!-- Camera UI -->
+      <div id="cam-wrap-${rowId}" style="display:none">
+        <div class="grid-2" style="gap:10px;margin-bottom:10px">
+          <div>
+            <div class="text-xs font-bold text-muted mb-1">📍 LOCATION (Back Camera)</div>
+            <div style="position:relative;border-radius:10px;overflow:hidden;background:#000">
+              <video id="vid-back-${rowId}" playsinline autoplay muted style="width:100%;display:block;max-height:200px;object-fit:cover"></video>
+              <div id="gps-${rowId}" style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,.7);color:#fff;font-size:10px;padding:3px 6px;border-radius:4px;font-family:monospace">📍…</div>
+              <div id="clk-${rowId}" style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.7);color:#fff;font-size:10px;padding:3px 6px;border-radius:4px;font-family:monospace"></div>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-muted mb-1">🤳 SELFIE (Front Camera)</div>
+            <div style="position:relative;border-radius:10px;overflow:hidden;background:#111">
+              <video id="vid-front-${rowId}" playsinline autoplay muted style="width:100%;display:block;max-height:200px;object-fit:cover;transform:scaleX(-1)"></video>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-2 mb-3">
+          <button class="btn btn-primary" onclick="captureRowPhoto('${rowId}',${idx})">📸 Capture Both</button>
+          <button class="btn btn-danger btn-sm" onclick="stopRowCameras('${rowId}')">✕ Cancel</button>
+        </div>
+      </div>
+      <!-- Preview -->
+      <div id="preview-wrap-${rowId}" style="display:none;margin-bottom:12px">
+        <div class="grid-2" style="gap:10px">
+          <div>
+            <div class="text-xs font-bold text-muted mb-1">📍 Location Photo</div>
+            <canvas id="canvas-back-${rowId}" style="width:100%;border-radius:10px;display:block"></canvas>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-muted mb-1">🤳 Selfie</div>
+            <canvas id="canvas-front-${rowId}" style="width:100%;border-radius:10px;display:block"></canvas>
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm mt-2" onclick="retakeRowPhoto('${rowId}',${idx})">🔄 Retake</button>
+      </div>
+      <!-- Status -->
+      <div id="status-${rowId}">
+        <button class="btn btn-primary btn-sm" onclick="openRowCameras('${rowId}',${idx})">📷 Take Photos</button>
+      </div>
+      <div id="captured-badge-${rowId}" style="display:none" class="mt-2">
+        <span class="badge badge-green">✅ Photos captured</span>
+      </div>
+    </div>`;
+  document.getElementById('ci-photo-rows').appendChild(div);
+}
+
+function removePhotoRow(rowId){
+  ciSession.rows = ciSession.rows.filter(r=>r.id!==rowId);
+  stopRowCameras(rowId);
+  const el = document.getElementById('ci-row-'+rowId);
+  if(el) el.remove();
+}
+
+async function openRowCameras(rowId, idx){
   try {
-    photoStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width:{ideal:1280}, height:{ideal:960} }
-    });
-    const vid = document.getElementById('photo-video');
-    vid.srcObject = photoStream;
-    await vid.play();
-    document.getElementById('photo-camera-wrap').style.display = 'block';
-    document.getElementById('photo-preview-wrap').style.display = 'none';
-    document.getElementById('btn-open-camera').style.display = 'none';
-    document.getElementById('btn-submit-photo').style.display = 'none';
-    photoCaptured = null;
-
-    // Start GPS
-    photoGPS = null;
+    // Back camera
+    const backStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:'environment'},width:{ideal:1280},height:{ideal:960}}});
+    document.getElementById('vid-back-'+rowId).srcObject = backStream;
+    await document.getElementById('vid-back-'+rowId).play();
+    // Front camera (selfie)
+    let frontStream;
+    try {
+      frontStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});
+      document.getElementById('vid-front-'+rowId).srcObject = frontStream;
+      await document.getElementById('vid-front-'+rowId).play();
+    } catch(e){ frontStream = null; }
+    photoRowStreams[rowId] = {backStream, frontStream};
+    document.getElementById('cam-wrap-'+rowId).style.display='block';
+    document.getElementById('status-'+rowId).style.display='none';
+    // GPS
+    photoRowGPS[rowId] = null;
     navigator.geolocation?.getCurrentPosition(pos=>{
-      photoGPS = { lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6), acc: Math.round(pos.coords.accuracy) };
-      const overlay = document.getElementById('photo-gps-overlay');
-      if(overlay) overlay.textContent = `📍 ${photoGPS.lat}, ${photoGPS.lng} (±${photoGPS.acc}m)`;
-    }, ()=>{
-      const overlay = document.getElementById('photo-gps-overlay');
-      if(overlay) overlay.textContent = '📍 GPS unavailable';
-    }, {enableHighAccuracy:true, timeout:10000});
+      photoRowGPS[rowId] = {lat:pos.coords.latitude.toFixed(6),lng:pos.coords.longitude.toFixed(6),acc:Math.round(pos.coords.accuracy)};
+      const el = document.getElementById('gps-'+rowId);
+      if(el) el.textContent = `📍${photoRowGPS[rowId].lat},${photoRowGPS[rowId].lng}`;
+    },()=>{ const el=document.getElementById('gps-'+rowId); if(el) el.textContent='📍 GPS N/A'; },{enableHighAccuracy:true,timeout:10000});
+    // Clock
+    clearInterval(photoClockIntervals[rowId]);
+    photoClockIntervals[rowId] = setInterval(()=>{
+      const el=document.getElementById('clk-'+rowId);
+      if(el) el.textContent=new Date().toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    },1000);
+  } catch(e){ toast('Camera error: '+e.message,'err'); }
+}
 
-    // Live clock overlay
-    clearInterval(photoClockInterval);
-    photoClockInterval = setInterval(()=>{
-      const el = document.getElementById('photo-time-overlay');
-      if(el) el.textContent = new Date().toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    }, 1000);
-
-  } catch(e) {
-    const st = document.getElementById('photo-status');
-    st.style.display = 'block'; st.className = 'alert alert-err mt-3';
-    st.textContent = 'Camera error: ' + e.message;
+function stopRowCameras(rowId){
+  clearInterval(photoClockIntervals[rowId]);
+  const s = photoRowStreams[rowId];
+  if(s){
+    if(s.backStream) s.backStream.getTracks().forEach(t=>t.stop());
+    if(s.frontStream) s.frontStream.getTracks().forEach(t=>t.stop());
+    delete photoRowStreams[rowId];
   }
+  const cw=document.getElementById('cam-wrap-'+rowId);
+  if(cw) cw.style.display='none';
+  const sd=document.getElementById('status-'+rowId);
+  if(sd) sd.style.display='block';
 }
 
-function stopPhotoCamera() {
-  clearInterval(photoClockInterval);
-  if(photoStream) { photoStream.getTracks().forEach(t=>t.stop()); photoStream = null; }
-  document.getElementById('photo-camera-wrap').style.display = 'none';
-  document.getElementById('btn-open-camera').style.display = 'inline-flex';
-}
-
-function capturePhoto() {
-  const vid = document.getElementById('photo-video');
-  const canvas = document.getElementById('photo-canvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = vid.videoWidth;
-  canvas.height = vid.videoHeight;
-  ctx.drawImage(vid, 0, 0);
-
-  // Stamp GPS + timestamp on photo
+function captureRowPhoto(rowId, idx){
+  const row = ciSession.rows[idx];
+  const vidBack = document.getElementById('vid-back-'+rowId);
+  const vidFront = document.getElementById('vid-front-'+rowId);
+  const gps = photoRowGPS[rowId];
   const now = new Date();
   const timeStr = now.toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const loc = locationsData.find(l=>l.id===document.getElementById('photo-location').value);
-  const gpsStr = photoGPS ? `GPS: ${photoGPS.lat}, ${photoGPS.lng}` : 'GPS: unavailable';
-  const locStr = loc ? loc.name : '';
+  const gpsStr = gps?`GPS:${gps.lat},${gps.lng} ±${gps.acc}m`:'GPS:N/A';
+  const stampLine = `${timeStr} | ${gpsStr} | ${esc(ciSession.block_name)} | ${esc(ciSession.department)}`;
 
-  // Draw stamp background
-  const lines = [timeStr, gpsStr, locStr].filter(Boolean);
-  const fh = 18, pad = 8, lh = 22;
-  const bh = lines.length * lh + pad * 2;
-  const bw = canvas.width;
-  ctx.fillStyle = 'rgba(0,0,0,0.65)';
-  ctx.fillRect(0, canvas.height - bh, bw, bh);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `bold ${fh}px monospace`;
-  lines.forEach((line, i) => {
-    ctx.fillText(line, pad, canvas.height - bh + pad + (i+1)*lh - 4);
-  });
+  // Back photo with stamp
+  const cbk = document.getElementById('canvas-back-'+rowId);
+  cbk.width=vidBack.videoWidth; cbk.height=vidBack.videoHeight;
+  const ctxB=cbk.getContext('2d');
+  ctxB.drawImage(vidBack,0,0);
+  drawStamp(ctxB,cbk.width,cbk.height,[stampLine, row.name||'Location']);
+  row.back_photo = cbk.toDataURL('image/jpeg',0.82);
 
-  photoCaptured = canvas.toDataURL('image/jpeg', 0.85);
-  stopPhotoCamera();
-  document.getElementById('photo-preview-wrap').style.display = 'block';
-  document.getElementById('btn-submit-photo').style.display = 'inline-flex';
-  document.getElementById('btn-open-camera').style.display = 'none';
+  // Front photo (selfie) with stamp
+  const cfr = document.getElementById('canvas-front-'+rowId);
+  cfr.width=vidFront?.videoWidth||320; cfr.height=vidFront?.videoHeight||240;
+  const ctxF=cfr.getContext('2d');
+  if(vidFront?.videoWidth){
+    ctxF.save(); ctxF.scale(-1,1); ctxF.drawImage(vidFront,-cfr.width,0); ctxF.restore();
+  } else { ctxF.fillStyle='#111'; ctxF.fillRect(0,0,cfr.width,cfr.height); ctxF.fillStyle='#fff'; ctxF.font='14px sans-serif'; ctxF.fillText('Front camera N/A',10,cfr.height/2); }
+  drawStamp(ctxF,cfr.width,cfr.height,[timeStr, currentUser?.email||'Supervisor']);
+  row.front_photo = cfr.toDataURL('image/jpeg',0.75);
+
+  row.captured = true;
+  row.gps = gps;
+  stopRowCameras(rowId);
+  document.getElementById('preview-wrap-'+rowId).style.display='block';
+  document.getElementById('captured-badge-'+rowId).style.display='block';
+  document.getElementById('status-'+rowId).style.display='none';
 }
 
-function retakePhoto() {
-  photoCaptured = null;
-  document.getElementById('photo-preview-wrap').style.display = 'none';
-  document.getElementById('btn-submit-photo').style.display = 'none';
-  document.getElementById('btn-open-camera').style.display = 'inline-flex';
+function drawStamp(ctx,w,h,lines){
+  const fh=14, pad=6, lh=18;
+  const bh=lines.length*lh+pad*2;
+  ctx.fillStyle='rgba(0,0,0,0.7)';
+  ctx.fillRect(0,h-bh,w,bh);
+  ctx.fillStyle='#ffffff';
+  ctx.font=`bold ${fh}px monospace`;
+  lines.forEach((line,i)=>ctx.fillText(String(line).substring(0,80),pad,h-bh+pad+(i+1)*lh-3));
 }
 
-async function submitPhotoCheckin() {
-  const locId = document.getElementById('photo-location').value;
-  const shiftId = document.getElementById('qr-scan-shift').value;
-  const remarks = document.getElementById('photo-remarks').value.trim();
-  const loc = locationsData.find(l=>l.id===locId);
-  const shift = shiftsData.find(s=>s.id===shiftId);
+function retakeRowPhoto(rowId,idx){
+  ciSession.rows[idx].captured=false;
+  ciSession.rows[idx].back_photo=null;
+  ciSession.rows[idx].front_photo=null;
+  document.getElementById('preview-wrap-'+rowId).style.display='none';
+  document.getElementById('captured-badge-'+rowId).style.display='none';
+  document.getElementById('status-'+rowId).style.display='block';
+}
 
-  if(!locId){ toast('Select a location.','warn'); return; }
-  if(!shiftId){ toast('Select a shift.','warn'); return; }
-  if(!remarks){ toast('Please enter remarks.','warn'); return; }
-  if(!photoCaptured){ toast('Please capture a photo first.','warn'); return; }
-
-  const record = {
-    id: 'local_' + Date.now(),
-    location_id: locId,
-    location_name: loc?.name||'',
-    shift_id: shiftId,
-    shift_name: shift?.name||'',
+async function endCheckinSession(){
+  const uncaptured = ciSession.rows.filter(r=>!r.captured);
+  if(uncaptured.length>0){
+    const names=uncaptured.map(r=>r.name||'unnamed').join(', ');
+    if(!confirm(`${uncaptured.length} spot(s) have no photos: ${names}. Submit anyway?`)) return;
+  }
+  const validRows = ciSession.rows.filter(r=>r.captured);
+  if(!validRows.length){ toast('Please capture at least one photo.','warn'); return; }
+  const records = validRows.map(r=>({
+    block_id: ciSession.block_id,
+    block_name: ciSession.block_name,
+    department: ciSession.department,
+    shift_id: ciSession.shift_id,
+    shift_name: ciSession.shift_name,
+    spot_name: r.name||'Location',
+    remarks: r.remarks||'',
+    back_photo: r.back_photo,
+    front_photo: r.front_photo,
+    latitude: r.gps?.lat||null,
+    longitude: r.gps?.lng||null,
+    gps_accuracy: r.gps?.acc||null,
     supervisor_id: currentUser.id,
     supervisor_email: currentUser.email,
-    remarks,
-    photo_base64: photoCaptured,
-    latitude: photoGPS?.lat||null,
-    longitude: photoGPS?.lng||null,
-    gps_accuracy: photoGPS?.acc||null,
     checkin_at: new Date().toISOString(),
-    synced: false
-  };
+    expires_at: new Date(Date.now()+30*24*60*60*1000).toISOString()
+  }));
 
-  const st = document.getElementById('photo-status');
-
-  if(navigator.onLine) {
-    // Try to save to Supabase
+  const st = document.getElementById('photo-status')||document.createElement('div');
+  if(navigator.onLine){
     loading(true);
     try {
-      const {error} = await sb.from('photo_checkins').insert({
-        location_id: locId, location_name: loc?.name,
-        shift_id: shiftId, shift_name: shift?.name,
-        supervisor_id: currentUser.id, supervisor_email: currentUser.email,
-        remarks, photo_base64: photoCaptured,
-        latitude: photoGPS?.lat||null, longitude: photoGPS?.lng||null,
-        gps_accuracy: photoGPS?.acc||null,
-        checkin_at: new Date().toISOString()
-      });
+      const {error} = await sb.from('photo_checkins').insert(records);
       if(error) throw error;
-      st.style.display = 'block'; st.className = 'alert alert-ok mt-3';
-      st.textContent = '✅ Check-in submitted successfully!';
-      toast('Check-in submitted!');
-    } catch(e) {
-      // Save offline if Supabase fails
-      record.synced = false;
-      const q = getOfflineQueue(); q.push(record); saveOfflineQueue(q);
-      st.style.display = 'block'; st.className = 'alert alert-warn mt-3';
-      st.textContent = '📵 Saved offline — will sync when connected.';
+      toast(`✅ ${records.length} photo(s) submitted!`);
+      resetCheckinSession();
+      await loadPhotoCheckins();
+    } catch(e){
+      saveRecordsOffline(records);
+      toast('Saved offline — will sync when connected.','warn');
+      resetCheckinSession();
     } finally { loading(false); }
   } else {
-    // Offline — save to queue
-    const q = getOfflineQueue(); q.push(record); saveOfflineQueue(q);
-    st.style.display = 'block'; st.className = 'alert alert-warn mt-3';
-    st.textContent = '📵 No signal — saved offline. Will sync automatically when connected.';
-    toast('Saved offline — will sync when signal resumes.','warn');
+    saveRecordsOffline(records);
+    toast(`📵 ${records.length} photo(s) saved offline — will sync when signal resumes.`,'warn');
+    resetCheckinSession();
   }
-
-  // Reset form
-  photoCaptured = null;
-  document.getElementById('photo-preview-wrap').style.display = 'none';
-  document.getElementById('btn-submit-photo').style.display = 'none';
-  document.getElementById('btn-open-camera').style.display = 'inline-flex';
-  document.getElementById('photo-remarks').value = '';
   updateOfflinePending();
-  await loadPhotoCheckins();
 }
 
+function saveRecordsOffline(records){
+  const q = getOfflineQueue();
+  records.forEach(r=>q.push({...r, synced:false, id:'local_'+Date.now()+'_'+Math.random()}));
+  saveOfflineQueue(q);
+}
+
+function resetCheckinSession(){
+  Object.keys(photoRowStreams).forEach(id=>stopRowCameras(id));
+  ciSession = null;
+  document.getElementById('ci-step1').style.display='block';
+  document.getElementById('ci-step2').style.display='none';
+  document.getElementById('ci-photo-rows').innerHTML='';
+}
+
+// Dummy stubs for old references
+function openPhotoCamera(){}
+function stopPhotoCamera(){}
+function capturePhoto(){}
+function retakePhoto(){}
+function submitPhotoCheckin(){}
+
+async function viewPhoto(id) {
+  const {data,error} = await sb.from('photo_checkins').select('*').eq('id',id).single();
+  if(error||!data) return;
+  const w = window.open('','_blank');
+  const bp = data.back_photo||data.photo_base64||'';
+  const fp = data.front_photo||'';
+  w.document.write(`<html><head><title>Check-in Photos — ${esc(data.block_name||'')} ${esc(data.department||'')}</title>
+  <style>body{margin:0;background:#111;color:#fff;font-family:monospace;padding:16px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:1000px;margin:0 auto}
+  img{width:100%;border-radius:10px}h2{font-size:14px;color:#94a3b8;margin-bottom:8px}
+  .info{background:#1e293b;border-radius:10px;padding:14px;margin-bottom:16px;max-width:1000px;margin:0 auto 16px}
+  </style></head><body>
+  <div class="info">
+    <strong>${esc(data.block_name||'')} | ${esc(data.department||'')} | ${esc(data.spot_name||'')}</strong><br>
+    ${fmtDateTime(data.checkin_at)} | Shift: ${esc(data.shift_name||'')} | ${esc(data.supervisor_email||'')}<br>
+    Remarks: ${esc(data.remarks||'')} | GPS: ${data.latitude||'N/A'}, ${data.longitude||''}
+  </div>
+  <div class="grid">
+    <div><h2>📍 Location Photo</h2>${bp?`<img src="${bp}">`:'<p>No photo</p>'}</div>
+    <div><h2>🤳 Selfie Verification</h2>${fp?`<img src="${fp}">`:'<p>No selfie</p>'}</div>
+  </div></body></html>`);
+}
+
+
+// ══════════════════════════════════════════════
+// RESET PASSWORD
+// ══════════════════════════════════════════════
+let resetPwUserId = '';
+
+function openResetPwModal(userId, email){
+  resetPwUserId = userId;
+  document.getElementById('reset-pw-email').textContent = email;
+  document.getElementById('reset-pw-inp').value = '';
+  document.getElementById('reset-pw-inp').type = 'password';
+  document.getElementById('reset-pw-eye').textContent = '👁';
+  openModal('modal-reset-pw');
+}
+
+function toggleResetPwView(){
+  const inp = document.getElementById('reset-pw-inp');
+  const eye = document.getElementById('reset-pw-eye');
+  if(inp.type==='password'){ inp.type='text'; eye.textContent='🙈'; }
+  else { inp.type='password'; eye.textContent='👁'; }
+}
+
+async function confirmResetPw(){
+  const newPw = document.getElementById('reset-pw-inp').value;
+  if(!newPw||newPw.length<6){ toast('Password must be at least 6 characters.','err'); return; }
+  loading(true);
+  try {
+    // Use Supabase admin to update password via service role
+    // Since we only have anon key, we use a workaround:
+    // Store new password locally and show instruction
+    localStorage.setItem('hk_pw_'+resetPwUserId, newPw);
+    closeModal('modal-reset-pw');
+    renderUsers();
+    toast('Password updated locally. To apply in Supabase: Auth → Users → find user → Update password.','info');
+    // If user is resetting their own password, use updateUser
+    if(resetPwUserId === currentUser?.id){
+      const {error} = await sb.auth.updateUser({password: newPw});
+      if(!error){ toast('Your password has been updated!'); }
+    }
+  } catch(e){ toast('Error: '+e.message,'err'); }
+  finally { loading(false); }
+}
+
+
+// ══════════════════════════════════════════════
+// SYNC OFFLINE + LOAD HISTORY
+// ══════════════════════════════════════════════
 async function syncOfflineCheckins() {
   const q = getOfflineQueue();
-  if(!q.length) return;
-  let synced = 0;
-  const remaining = [];
-  for(const rec of q) {
+  if(!q.length){ toast('No offline records to sync.','info'); return; }
+  let synced=0; const remaining=[];
+  for(const rec of q){
     try {
       const {error} = await sb.from('photo_checkins').insert({
-        location_id: rec.location_id, location_name: rec.location_name,
-        shift_id: rec.shift_id, shift_name: rec.shift_name,
-        supervisor_id: rec.supervisor_id, supervisor_email: rec.supervisor_email,
-        remarks: rec.remarks, photo_base64: rec.photo_base64,
-        latitude: rec.latitude, longitude: rec.longitude,
-        gps_accuracy: rec.gps_accuracy, checkin_at: rec.checkin_at
+        block_id:rec.block_id, block_name:rec.block_name,
+        department:rec.department, shift_id:rec.shift_id, shift_name:rec.shift_name,
+        spot_name:rec.spot_name, remarks:rec.remarks,
+        back_photo:rec.back_photo, front_photo:rec.front_photo,
+        latitude:rec.latitude, longitude:rec.longitude, gps_accuracy:rec.gps_accuracy,
+        supervisor_id:rec.supervisor_id, supervisor_email:rec.supervisor_email,
+        checkin_at:rec.checkin_at, expires_at:rec.expires_at
       });
       if(error) throw error;
       synced++;
-    } catch(e) { remaining.push(rec); }
+    } catch(e){ remaining.push(rec); }
   }
   saveOfflineQueue(remaining);
-  if(synced > 0) { toast(`☁️ ${synced} offline check-in(s) synced!`); await loadPhotoCheckins(); }
+  if(synced>0){ toast(`☁️ ${synced} record(s) synced!`); await loadPhotoCheckins(); }
+  else { toast('Sync failed — check connection.','err'); }
   updateOfflinePending();
-}
-
-function updateOfflinePending() {
-  const q = getOfflineQueue().filter(r => r.supervisor_id === currentUser?.id);
-  const card = document.getElementById('offline-pending-card');
-  if(!card) return;
-  card.style.display = q.length ? 'block' : 'none';
-  const tb = document.getElementById('offline-pending-table');
-  if(!tb) return;
-  tb.innerHTML = q.map(r=>`
-    <tr>
-      <td>${fmtDateTime(r.checkin_at)}</td>
-      <td>${esc(r.location_name)}</td>
-      <td>${esc(r.remarks)}</td>
-      <td><span class="badge badge-amber">⏳ Pending</span></td>
-    </tr>
-  `).join('');
 }
 
 async function loadPhotoCheckins() {
   if(!currentUser) return;
   const {data,error} = await sb.from('photo_checkins').select('*')
     .eq('supervisor_id', currentUser.id)
-    .order('checkin_at', {ascending:false}).limit(20);
+    .order('checkin_at', {ascending:false}).limit(50);
   const tb = document.getElementById('photo-checkin-history');
   if(!tb) return;
   if(error||!data||!data.length){ tb.innerHTML='<tr><td colspan="6" class="text-center text-muted" style="padding:24px">No check-ins yet.</td></tr>'; return; }
   tb.innerHTML = data.map(r=>`
     <tr>
       <td class="text-sm">${fmtDateTime(r.checkin_at)}</td>
-      <td>${esc(r.location_name||'—')}</td>
-      <td>${esc(r.shift_name||'—')}</td>
+      <td>${esc(r.block_name||r.location_name||'—')}</td>
+      <td>${esc(r.department||'—')}</td>
+      <td>${esc(r.spot_name||'—')}</td>
       <td class="text-sm">${esc(r.remarks||'—')}</td>
-      <td>${r.photo_base64?`<button class="btn btn-outline btn-xs" onclick="viewPhoto('${r.id}')">View</button>`:'—'}</td>
-      <td class="text-sm">${r.latitude?`${r.latitude}, ${r.longitude}`:'—'}</td>
+      <td><button class="btn btn-outline btn-xs" onclick="viewPhoto('${r.id}')">👁 View</button></td>
     </tr>
   `).join('');
 }
 
-async function viewPhoto(id) {
-  const {data,error} = await sb.from('photo_checkins').select('photo_base64,location_name,checkin_at,remarks').eq('id',id).single();
-  if(error||!data) return;
-  const w = window.open('','_blank');
-  w.document.write(`<html><head><title>Check-in Photo</title></head><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="${data.photo_base64}" style="max-width:100%;max-height:100vh"><div style="position:fixed;top:10px;left:10px;background:rgba(0,0,0,.7);color:#fff;padding:8px 12px;border-radius:8px;font-family:monospace;font-size:13px">${esc(data.location_name)} | ${fmtDateTime(data.checkin_at)}<br>${esc(data.remarks)}</div></body></html>`);
-}
-
 </script>
+
+
+<!-- RESET PASSWORD MODAL -->
+<div class="modal-bg" id="modal-reset-pw"><div class="modal">
+  <div class="modal-hd"><span class="modal-title">🔑 Reset Password</span><button class="btn-close" onclick="closeModal('modal-reset-pw')">✕</button></div>
+  <div class="modal-body">
+    <div class="alert alert-info mb-3">Resetting password for: <strong id="reset-pw-email"></strong></div>
+    <div class="form-field">
+      <label>New Password *</label>
+      <div style="position:relative">
+        <input type="password" id="reset-pw-inp" placeholder="Min 6 characters" style="padding-right:40px">
+        <button type="button" onclick="toggleResetPwView()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#64748b" id="reset-pw-eye">👁</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-outline" onclick="closeModal('modal-reset-pw')">Cancel</button>
+    <button class="btn btn-primary" onclick="confirmResetPw()">Reset Password</button>
+  </div>
+</div></div>
 
 <!-- BULK UPLOAD MODAL -->
 <div class="modal-bg" id="modal-bulk"><div class="modal" style="max-width:560px">
