@@ -340,7 +340,7 @@ tbody tr:hover td{background:#f8fafc}
               </div>
             </div>
             <div class="card-body" style="padding:0">
-              <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Attendance ID</th><th>Designation</th><th>Department</th><th>Type</th><th>Actions</th></tr></thead><tbody id="staff-table"></tbody></table></div>
+              <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Department</th><th>Name</th><th>Attendance ID</th><th>Designation</th><th>Type</th><th>Block</th><th>Actions</th></tr></thead><tbody id="staff-table"></tbody></table></div>
             </div>
           </div>
         </div>
@@ -1020,7 +1020,7 @@ let editingStaff = null;
 
 async function loadStaff(){
   const showRelievers = document.getElementById('show-relievers')?.checked;
-  let query = sb.from('staff').select('*').order('name');
+  let query = sb.from('staff').select('*').order('department').order('name');
   if(!showRelievers) query = query.neq('type','reliever');
   const {data,error} = await query;
   if(error){ toast('Staff error: '+error.message,'err'); return; }
@@ -1029,23 +1029,63 @@ async function loadStaff(){
 }
 
 function renderStaff(filter=''){
-  let list = staffData;
-  if(filter){ const lo=filter.toLowerCase(); list=list.filter(s=>s.name.toLowerCase().includes(lo)||s.attendance_id.toLowerCase().includes(lo)||(s.department||'').toLowerCase().includes(lo)); }
+  let list = [...staffData];
+  // Sort by department then name
+  list.sort((a,b)=>{
+    const dc = (a.department||'').localeCompare(b.department||'');
+    return dc !== 0 ? dc : (a.name||'').localeCompare(b.name||'');
+  });
+  if(filter){ const lo=filter.toLowerCase(); list=list.filter(s=>s.name.toLowerCase().includes(lo)||s.attendance_id.toLowerCase().includes(lo)||(s.department||'').toLowerCase().includes(lo)||(s.block_name||'').toLowerCase().includes(lo)); }
   const tb = document.getElementById('staff-table');
-  if(!list.length){ tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">👥</div><div class="empty-text">No staff found</div></div></td></tr>`; return; }
-  tb.innerHTML = list.map(s=>`
-    <tr>
+  if(!list.length){ tb.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="empty-icon">👥</div><div class="empty-text">No staff found</div></div></td></tr>`; return; }
+
+  // Group by department for zebra striping
+  let currentDept = null;
+  let deptCount = 0;
+  let rowNum = 0;
+  const rows = list.map(s=>{
+    rowNum++;
+    const isDeptChange = s.department !== currentDept;
+    if(isDeptChange){ currentDept = s.department; deptCount++; }
+    const deptCell = isDeptChange
+      ? `<td rowspan="${list.filter(x=>x.department===s.department).length}" style="background:#f8fafc;font-weight:700;font-size:12px;color:#1e40af;vertical-align:top;padding:12px 10px;border-right:2px solid #dbeafe;white-space:nowrap">${esc(s.department||'—')}</td>`
+      : '';
+    // Find which block this department belongs to
+    const block = blocksData.find(b=>(b.departments||[]).includes(s.department));
+    const blockName = block ? block.name : '—';
+    // Block select for inline assignment
+    const blockOpts = '<option value="">— Unassigned —</option>' + blocksData.map(b=>`<option value="${b.id}" ${b.id===s.block_id?'selected':''}>${esc(b.name)}</option>`).join('');
+
+    return `<tr style="background:${deptCount%2===0?'#fafafa':'#fff'}">
+      <td class="text-muted text-xs" style="padding:8px 6px;min-width:32px">${rowNum}</td>
+      ${deptCell}
       <td><strong>${esc(s.name)}</strong></td>
       <td><span class="badge badge-gray">${esc(s.attendance_id)}</span></td>
-      <td>${esc(s.designation||'—')}</td>
-      <td>${esc(s.department||'—')}</td>
+      <td class="text-muted text-sm">${esc(s.designation||'—')}</td>
       <td><span class="badge ${s.type==='reliever'?'badge-amber':'badge-blue'}">${s.type||'regular'}</span></td>
+      <td>
+        <select onchange="assignStaffBlock('${s.id}', this.value)"
+          style="border:1.5px solid #e2e8f0;border-radius:6px;padding:4px 8px;font-size:12px;min-width:100px;color:${block?'#1e40af':'#94a3b8'}">
+          ${blockOpts}
+        </select>
+      </td>
       <td><div class="flex gap-2">
         <button class="btn btn-outline btn-xs" onclick="openStaffModal('${s.id}')">Edit</button>
         <button class="btn btn-danger btn-xs" onclick="deleteStaffMember('${s.id}')">Del</button>
       </div></td>
-    </tr>
-  `).join('');
+    </tr>`;
+  });
+  tb.innerHTML = rows.join('');
+}
+
+async function assignStaffBlock(staffId, blockId){
+  // Update staff record with block_id
+  const {error} = await sb.from('staff').update({block_id: blockId||null}).eq('id',staffId);
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  // Update local data
+  const s = staffData.find(x=>x.id===staffId);
+  if(s) s.block_id = blockId||null;
+  toast('Block assigned!');
 }
 
 function openStaffModal(id){
@@ -2036,8 +2076,16 @@ function refreshAnItemSelect() {
 // ══════════════════════════════════════════════
 function downloadStaffCSV() {
   if(!staffData.length){ toast('No staff data loaded.','warn'); return; }
-  const H = ['Name','Attendance ID','Designation','Department','Type'];
-  const rows = staffData.map(s => [s.name,s.attendance_id,s.designation||'',s.department||'',s.type||'regular'].map(v=>`"${String(v).replace(/"/g,'""')}"`));
+  // Sort by department then name
+  const sorted = [...staffData].sort((a,b)=>{
+    const dc=(a.department||'').localeCompare(b.department||'');
+    return dc!==0?dc:(a.name||'').localeCompare(b.name||'');
+  });
+  const H = ['S.No','Department','Name','Attendance ID','Designation','Type','Block'];
+  const rows = sorted.map((s,i) => {
+    const block = blocksData.find(b=>b.id===s.block_id);
+    return [i+1, s.department||'', s.name, s.attendance_id, s.designation||'', s.type||'regular', block?.name||''].map(v=>`"${String(v).replace(/"/g,'""')}"`);
+  });
   const csv = '\uFEFF' + [H.map(h=>`"${h}"`).join(','), ...rows.map(r=>r.join(','))].join('\r\n');
   downloadCSV(csv, 'staff_list.csv');
   toast('Staff list downloaded!');
