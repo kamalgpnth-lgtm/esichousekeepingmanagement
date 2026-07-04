@@ -56,17 +56,17 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#3b82f6!import
 .err-box.show{display:block}
 
 /* ─── APP SHELL ─── */
-.topbar{background:#fff;border-bottom:1px solid #e2e8f0;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:60;flex-shrink:0}
-.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar{background:#fff;border-bottom:1px solid #e2e8f0;padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:60;flex-shrink:0;min-width:0}
+.topbar-left{display:flex;align-items:center;gap:10px;min-width:0;overflow:hidden}
 .topbar-icon{width:36px;height:36px;background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .topbar-title{font-size:15px;font-weight:800;color:#0f172a}
 .topbar-sub{font-size:11px;color:#94a3b8;margin-top:1px}
-.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .role-pill{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
 .role-master{background:#ede9fe;color:#7c3aed}
 .role-supervisor{background:#dcfce7;color:#15803d}
 .user-pill{font-size:12px;color:#64748b;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.btn-logout{background:#f8fafc;border:1.5px solid #e2e8f0;color:#64748b;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;transition:all .15s}
+.btn-logout{background:#f8fafc;border:1.5px solid #e2e8f0;color:#64748b;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;transition:all .15s;white-space:nowrap;flex-shrink:0}
 .btn-logout:hover{border-color:#ef4444;color:#ef4444}
 .app-content{flex:1;overflow-y:auto;padding:24px 20px}
 .max-w{max-width:1200px;margin:0 auto}
@@ -198,7 +198,7 @@ tbody tr:hover td{background:#f8fafc}
 @media(max-width:640px){
   .sup-menu-grid,.form-grid-2,.form-grid-3,.grid-2,.grid-4{grid-template-columns:1fr}
   .stats-row{grid-template-columns:1fr 1fr}.app-content{padding:16px 12px}
-  .user-pill,.topbar-sub{display:none}.tabs-nav{gap:2px}.tab-btn{padding:7px 10px;font-size:12px}
+  .user-pill,.topbar-sub{display:none}.tabs-nav{gap:2px}.tab-btn{padding:7px 8px;font-size:11px}.topbar-title{font-size:13px}.role-pill{display:none}
 }
 </style>
 </head>
@@ -268,7 +268,7 @@ tbody tr:hover td{background:#f8fafc}
     <div class="topbar-right">
       <span class="role-pill" id="role-pill"></span>
       <span class="user-pill" id="user-pill"></span>
-      <button class="btn-logout" onclick="doLogout()">Sign out</button>
+      <button class="btn-logout" onclick="doLogout()" title="Sign out">⏏ Sign out</button>
     </div>
   </div>
 
@@ -848,6 +848,7 @@ async function loadProfile(userId){
   try {
     const {data, error} = await sb.from('users').select('*').eq('id', userId).single();
     if(error) throw error;
+    if(!data) throw new Error('User profile not found. Run: INSERT INTO public.users(id,email,role) SELECT id,email,'supervisor' FROM auth.users WHERE id=''+userId+'';');
     currentProfile = data;
     currentUser = {id: userId, email: data.email, role: data.role};
     await launchApp();
@@ -857,11 +858,25 @@ async function loadProfile(userId){
   } finally { loading(false); }
 }
 
-async function doLogout(){
-  await sb.auth.signOut();
-  currentUser = null; currentProfile = null;
-  stopQRScan();
+function doLogout(){
+  // Clear everything regardless of network
+  currentUser = null;
+  currentProfile = null;
+  localStorage.removeItem('hk_offline_session');
+  // Stop any running cameras
+  try { stopQRScan(); } catch(e){}
+  // Sign out from Supabase in background (don't wait)
+  try { if(sb) sb.auth.signOut(); } catch(e){}
+  // Clear Supabase session from storage
+  try {
+    Object.keys(localStorage).forEach(k=>{
+      if(k.startsWith('sb-')) localStorage.removeItem(k);
+    });
+  } catch(e){}
+  // Go to login immediately
   showScreen('s-login');
+  document.getElementById('l-email').value='';
+  document.getElementById('l-pass').value='';
 }
 
 async function launchApp(){
@@ -1144,10 +1159,16 @@ function renderStaff(filter=''){
 }
 
 async function assignStaffBlock(staffId, blockId){
-  // Update staff record with block_id
+  // Try to update block_id on staff — requires SQL: ALTER TABLE public.staff ADD COLUMN IF NOT EXISTS block_id uuid;
   const {error} = await sb.from('staff').update({block_id: blockId||null}).eq('id',staffId);
-  if(error){ toast('Error: '+error.message,'err'); return; }
-  // Update local data
+  if(error){
+    if(error.message.includes('block_id')){
+      toast('Run SQL first: ALTER TABLE public.staff ADD COLUMN IF NOT EXISTS block_id uuid;','err');
+    } else {
+      toast('Error: '+error.message,'err');
+    }
+    return;
+  }
   const s = staffData.find(x=>x.id===staffId);
   if(s) s.block_id = blockId||null;
   toast('Block assigned!');
@@ -1292,6 +1313,13 @@ async function saveGpsSettings(){
 // ══════════════════════════════════════════════
 let blocksData = [];
 
+// Get block assigned to current supervisor — defined early so available everywhere
+function getMyBlock(){
+  if(!currentUser || !blocksData.length) return null;
+  const email = (currentUser.email||'').toLowerCase().trim();
+  return blocksData.find(b=>(b.supervisor_email||'').toLowerCase().trim()===email) || null;
+}
+
 async function loadBlocks(){
   const {data,error} = await sb.from('blocks').select('*').order('name');
   if(error){ toast('Blocks error: '+error.message,'err'); return; }
@@ -1302,14 +1330,18 @@ async function loadBlocks(){
 }
 
 async function loadBlocksForSupervisor(){
-  const {data,error} = await sb.from('blocks').select('*').order('name');
-  if(error){ console.warn('Blocks load error:',error.message); return; }
-  blocksData = data||[];
-  const myBlock = getMyBlock();
-  console.log('Supervisor block:', myBlock?.name || 'NOT FOUND', '| Email:', currentUser?.email);
-  populatePhotoLocations();
-  updateOfflinePending();
-  updateOnlineStatus();
+  try {
+    const {data,error} = await sb.from('blocks').select('*').order('name');
+    if(error){ console.warn('Blocks load error:',error.message); return; }
+    blocksData = data||[];
+    const myBlock = getMyBlock();
+    console.log('Supervisor block:', myBlock ? myBlock.name : 'NOT FOUND', '| Email:', currentUser?.email);
+    populatePhotoLocations();
+    updateOfflinePending();
+    updateOnlineStatus();
+  } catch(e) {
+    console.warn('loadBlocksForSupervisor error:', e.message);
+  }
 }
 
 function renderBlocks(){
