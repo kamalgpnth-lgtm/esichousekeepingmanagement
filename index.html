@@ -208,7 +208,7 @@ tbody tr:hover td{background:#f8fafc}
 <div id="g-alert" class="alert g-alert"></div>
 
 <!-- ══════════ SETUP SCREEN ══════════ -->
-<div class="screen active" id="s-setup">
+<div class="screen" id="s-setup" style="display:none">
   <div class="setup-card">
     <div class="setup-logo">🧹</div>
     <div class="setup-title">Connect to Supabase</div>
@@ -239,7 +239,7 @@ tbody tr:hover td{background:#f8fafc}
 </div>
 
 <!-- ══════════ LOGIN ══════════ -->
-<div class="screen" id="s-login">
+<div class="screen active" id="s-login">
   <div class="login-card" style="margin:auto">
     <div class="app-logo">🧹</div>
     <div class="app-name">Housekeeping Management</div>
@@ -252,9 +252,7 @@ tbody tr:hover td{background:#f8fafc}
       <input class="inp" type="password" id="l-pass" placeholder="••••••••">
     </div>
     <button class="btn-login" id="login-btn" onclick="doLogin()">Sign In</button>
-    <div style="text-align:center;margin-top:14px">
-      <button onclick="resetSetup()" style="background:none;border:none;color:#94a3b8;font-size:12px;cursor:pointer">⚙️ Change Supabase settings</button>
-    </div>
+
   </div>
 </div>
 
@@ -739,8 +737,9 @@ function getConfig(){
 }
 
 async function initSupabase(){
-  const {url, key} = getConfig();
-  if(!url || !key) return false;
+  // Hardcoded credentials — no setup screen needed
+  const url = "https://zqnligirlvmyhudpxrxu.supabase.co";
+  const key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbmxpZ2lybHZteWh1ZHB4cnh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDYxODIsImV4cCI6MjA5NDEyMjE4Mn0.t_WtEg845ecE1jbg9xRKTWvOw05ays7N4XlwdufNPRo";
   try {
     sb = supabase.createClient(url, key);
     return true;
