@@ -347,7 +347,7 @@ tbody tr:hover td{background:#f8fafc}
           <div class="card">
             <div class="card-hd">
               <div><div class="card-title">📍 Locations</div><div class="card-desc">Check-in points with photo reports</div></div>
-              <div class="card-hd-actions"><button class="btn btn-outline btn-sm" onclick="switchTab(document.querySelector('[data-tab=photoreport]'),'master')">📸 Photo Reports</button><button class="btn btn-primary btn-sm" onclick="openLocModal()">+ Add Location</button></div>
+              <div class="card-hd-actions"><button class="btn btn-outline btn-sm" onclick="switchToPhotoReport()">📸 Photo Reports</button><button class="btn btn-primary btn-sm" onclick="openLocModal()">+ Add Location</button></div>
             </div>
             <div class="card-body" style="padding:0">
               <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Latitude</th><th>Longitude</th><th>Block</th><th>Actions</th></tr></thead><tbody id="loc-table"></tbody></table></div>
@@ -914,7 +914,14 @@ function switchTab(btn, group){
   btn.classList.add('active');
   document.getElementById(group+'-tab-'+btn.dataset.tab)?.classList.add('active');
   if(btn.dataset.tab==='analytics'){ refreshDeptSelects(); refreshAnItemSelect(); }
+  if(btn.dataset.tab==='photoreport') initPhotoReportFilters();
+  if(btn.dataset.tab==='duty') initDutyReportFilters();
 }
+function switchToPhotoReport(){
+  const btn = document.querySelector('#master-tabs [data-tab="photoreport"]');
+  if(btn) switchTab(btn,'master');
+}
+
 function showSupMenu(name){
   ['issuance','duty','qr'].forEach(m=>document.getElementById('sup-'+m).style.display=m===name?'block':'none');
   document.querySelectorAll('.sup-menu-card').forEach((c,i)=>c.classList.toggle('active',['issuance','duty','qr'][i]===name));
@@ -2567,12 +2574,7 @@ function exportPhotoReport(){
 }
 
 // Populate photo report filters on tab switch
-const _origSwitchTab = switchTab;
-function switchTab(btn, group){
-  _origSwitchTab(btn, group);
-  if(btn.dataset.tab==='photoreport') initPhotoReportFilters();
-  if(btn.dataset.tab==='duty') initDutyReportFilters();
-}
+
 
 function initPhotoReportFilters(){
   // Set default date range (last 30 days)
