@@ -8,7 +8,6 @@
 <title>Housekeeping Management — ESIC KK Nagar</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -283,10 +282,9 @@ tbody tr:hover td{background:#f8fafc}
           <button class="tab-btn" data-tab="departments" onclick="switchTab(this,'master')">🏢 Departments</button>
           <button class="tab-btn" data-tab="staff" onclick="switchTab(this,'master')">👥 Staff</button>
           <button class="tab-btn" data-tab="locations" onclick="switchTab(this,'master')">📍 Locations</button>
-          <button class="tab-btn" data-tab="duty" onclick="switchTab(this,'master')">📋 Duty Charts</button>
-          <button class="tab-btn" data-tab="qrlogs" onclick="switchTab(this,'master')">📊 QR Logs</button>
-          <button class="tab-btn" data-tab="issuance" onclick="switchTab(this,'master')">📤 Issuance</button>
+          <button class="tab-btn" data-tab="duty" onclick="switchTab(this,'master')">📋 Duty Charts</button>          <button class="tab-btn" data-tab="issuance" onclick="switchTab(this,'master')">📤 Issuance</button>
           <button class="tab-btn" data-tab="analytics" onclick="switchTab(this,'master')">📈 Analytics</button>
+          <button class="tab-btn" data-tab="photoreport" onclick="switchTab(this,'master')">📸 Photo Reports</button>
           <button class="tab-btn" data-tab="supervisors" onclick="switchTab(this,'master')">👤 Supervisors</button>
         </div>
 
@@ -348,14 +346,11 @@ tbody tr:hover td{background:#f8fafc}
         <div class="tab-panel" id="master-tab-locations">
           <div class="card">
             <div class="card-hd">
-              <div><div class="card-title">📍 Locations & QR Codes</div><div class="card-desc">GPS-validated check-in points</div></div>
-              <div class="card-hd-actions">
-                <button class="btn btn-outline btn-sm" onclick="openQRVerifier()">📷 QR Verifier</button>
-                <button class="btn btn-primary btn-sm" onclick="openLocModal()">+ Add Location</button>
-              </div>
+              <div><div class="card-title">📍 Locations</div><div class="card-desc">Check-in points with photo reports</div></div>
+              <div class="card-hd-actions"><button class="btn btn-outline btn-sm" onclick="switchTab(document.querySelector('[data-tab=photoreport]'),'master')">📸 Photo Reports</button><button class="btn btn-primary btn-sm" onclick="openLocModal()">+ Add Location</button></div>
             </div>
             <div class="card-body" style="padding:0">
-              <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Latitude</th><th>Longitude</th><th>Block</th><th>QR</th><th>Actions</th></tr></thead><tbody id="loc-table"></tbody></table></div>
+              <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Latitude</th><th>Longitude</th><th>Block</th><th>Actions</th></tr></thead><tbody id="loc-table"></tbody></table></div>
             </div>
           </div>
           <div class="card mt-4">
@@ -379,41 +374,59 @@ tbody tr:hover td{background:#f8fafc}
         </div>
 
         <div class="tab-panel" id="master-tab-duty">
-          <div class="card">
+          <!-- Shift Management -->
+          <div class="card mb-4">
             <div class="card-hd">
-              <div><div class="card-title">📋 Shift Management & Daily Assignments</div></div>
+              <div><div class="card-title">⏰ Shift Management</div><div class="card-desc">Create shifts and assign staff</div></div>
               <button class="btn btn-primary btn-sm" onclick="openShiftModal()">+ Create Shift</button>
             </div>
             <div class="card-body">
-              <div id="shifts-grid" class="form-grid form-grid-3 mb-4"></div>
-              <div class="sep"></div>
-              <h4 class="font-bold mb-3" style="font-size:14px">All Submitted Assignments</h4>
-              <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Shift</th><th>Supervisor</th><th>Present</th><th>Total</th><th>Submitted</th></tr></thead><tbody id="assignments-table"></tbody></table></div>
+              <div id="shifts-grid" class="form-grid form-grid-3"></div>
             </div>
           </div>
-        </div>
-
-        <div class="tab-panel" id="master-tab-qrlogs">
+          <!-- Duty Report with filters -->
           <div class="card">
             <div class="card-hd">
-              <div><div class="card-title">📊 QR Attendance Logs</div></div>
-              <button class="btn btn-outline btn-sm" onclick="exportQRLogs()">⬇ Export CSV</button>
+              <div><div class="card-title">📋 Duty Chart Report</div><div class="card-desc">Filter by date range to see assignments, attendance and duty spots per staff</div></div>
+              <button class="btn btn-outline btn-sm" onclick="exportDutyReport()">⬇ Export CSV</button>
             </div>
             <div class="card-body">
               <div class="form-bg form-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px">
-                <div class="form-field"><label>From</label><input type="date" id="qr-from"></div>
-                <div class="form-field"><label>To</label><input type="date" id="qr-to"></div>
-                <div class="form-field"><label>Supervisor</label><select id="qr-sup"><option value="">All</option></select></div>
-                <div class="form-field"><label>Shift</label><select id="qr-shift-filter"><option value="">All shifts</option></select></div>
+                <div class="form-field"><label>From Date</label><input type="date" id="dc-from"></div>
+                <div class="form-field"><label>To Date</label><input type="date" id="dc-to"></div>
+                <div class="form-field"><label>Shift</label>
+                  <select id="dc-shift"><option value="">All shifts</option></select>
+                </div>
+                <div class="form-field"><label>Supervisor</label>
+                  <select id="dc-supervisor"><option value="">All supervisors</option></select>
+                </div>
               </div>
               <div class="flex gap-2 mb-4">
-                <button class="btn btn-primary btn-sm" onclick="loadQRLogs()">Apply Filters</button>
-                <button class="btn btn-outline btn-sm" onclick="clearQRFilters()">Clear</button>
+                <button class="btn btn-primary btn-sm" onclick="loadDutyReport()">🔍 Fetch Report</button>
+                <button class="btn btn-outline btn-sm" onclick="clearDutyFilters()">Clear</button>
               </div>
-              <div class="tbl-wrap"><table><thead><tr><th>Date/Time</th><th>Supervisor</th><th>Location</th><th>Shift</th><th>GPS Status</th></tr></thead><tbody id="qr-logs-table"></tbody></table></div>
+              <!-- Summary stats -->
+              <div id="dc-summary" style="display:none" class="mb-4"></div>
+              <!-- Staff duty summary table -->
+              <div id="dc-staff-summary" style="display:none" class="mb-4">
+                <h4 class="font-bold mb-3" style="font-size:14px">Staff Duty Summary</h4>
+                <div class="tbl-wrap">
+                  <table><thead><tr><th>Staff Name</th><th>Attendance ID</th><th>Department</th><th>Total Duties</th><th>Present</th><th>Absent</th><th>Duty Spots</th></tr></thead>
+                  <tbody id="dc-staff-table"></tbody></table>
+                </div>
+              </div>
+              <!-- Submissions table -->
+              <h4 class="font-bold mb-3" style="font-size:14px">All Submissions</h4>
+              <div class="tbl-wrap">
+                <table><thead><tr><th>Date</th><th>Shift</th><th>Supervisor</th><th>Present</th><th>Absent</th><th>Total</th><th>Submitted</th></tr></thead>
+                <tbody id="assignments-table"></tbody>
+              </table>
             </div>
           </div>
         </div>
+        </div>
+
+        
 
         <div class="tab-panel" id="master-tab-issuance">
           <div class="card">
@@ -454,6 +467,34 @@ tbody tr:hover td{background:#f8fafc}
           </div>
         </div>
 
+
+        <div class="tab-panel" id="master-tab-photoreport">
+          <div class="card">
+            <div class="card-hd">
+              <div><div class="card-title">📸 Supervisor Photo Reports</div><div class="card-desc">All check-in photos with GPS coordinates and timestamps</div></div>
+              <button class="btn btn-outline btn-sm" onclick="exportPhotoReport()">⬇ Export CSV</button>
+            </div>
+            <div class="card-body">
+              <div class="form-bg form-grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+                <div class="form-field"><label>From Date</label><input type="date" id="pr-from"></div>
+                <div class="form-field"><label>To Date</label><input type="date" id="pr-to"></div>
+                <div class="form-field"><label>Supervisor</label><select id="pr-supervisor"><option value="">All supervisors</option></select></div>
+                <div class="form-field"><label>Block</label><select id="pr-block"><option value="">All blocks</option></select></div>
+                <div class="form-field"><label>Department</label><select id="pr-dept-filter"><option value="">All departments</option></select></div>
+              </div>
+              <div class="flex gap-2 mb-4">
+                <button class="btn btn-primary btn-sm" onclick="loadPhotoReport()">🔍 Fetch Report</button>
+                <button class="btn btn-outline btn-sm" onclick="clearPhotoReportFilters()">Clear</button>
+              </div>
+              <div id="pr-summary" style="display:none" class="mb-4"></div>
+              <div class="tbl-wrap">
+                <table><thead><tr><th>Date/Time</th><th>Supervisor</th><th>Block</th><th>Department</th><th>Spot</th><th>Remarks</th><th>GPS</th><th>Photos</th></tr></thead>
+                <tbody id="photo-report-table"></tbody></table>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="tab-panel" id="master-tab-supervisors">
           <div class="card">
             <div class="card-hd">
@@ -472,7 +513,6 @@ tbody tr:hover td{background:#f8fafc}
         <div class="sup-menu-grid">
           <div class="sup-menu-card" onclick="showSupMenu('issuance')"><div class="sup-menu-icon">📦</div><div class="sup-menu-title">Inventory Issuance</div><div class="sup-menu-sub">Request supplies</div></div>
           <div class="sup-menu-card" onclick="showSupMenu('duty')"><div class="sup-menu-icon">📋</div><div class="sup-menu-title">Daily Duty</div><div class="sup-menu-sub">Mark attendance</div></div>
-          <div class="sup-menu-card" onclick="showSupMenu('qr')"><div class="sup-menu-icon">📷</div><div class="sup-menu-title">QR Scanner</div><div class="sup-menu-sub">Location check-in</div></div>
         </div>
         <div id="sup-issuance" style="display:none">
           <div class="card">
@@ -562,10 +602,7 @@ tbody tr:hover td{background:#f8fafc}
             </div>
           </div>
 
-          <div style="display:none">
-            <div id="qr-camera-wrap"><video id="qr-video" playsinline autoplay muted></video></div>
-            <div id="qr-idle"></div><div id="qr-msg"></div><div id="qr-scan-log"></div>
-          </div>
+
         </div>
       </div>
     </div>
@@ -684,10 +721,7 @@ tbody tr:hover td{background:#f8fafc}
   <div class="modal-ft"><button class="btn btn-primary" onclick="closeModal('modal-assign')">Done</button></div>
 </div></div>
 
-<div class="modal-bg" id="modal-qrverify"><div class="modal">
-  <div class="modal-hd"><span class="modal-title">📷 QR Verifier</span><button class="btn-close" onclick="stopQRVerifier()">✕</button></div>
-  <div class="modal-body">
-    <div class="qr-video-wrap mb-3"><video id="verify-video" playsinline autoplay muted></video><div class="qr-overlay"><div class="qr-frame"><div class="scan-line"></div></div></div></div>
+</div></div>
     <div id="verify-result"></div>
   </div>
 </div></div>
@@ -776,14 +810,37 @@ async function doLogin(){
   if(!email||!pass){ err.textContent='Enter email and password.'; err.classList.add('show'); return; }
 
   loading(true);
-  try {
-    const {data, error} = await sb.auth.signInWithPassword({email, password: pass});
-    if(error) throw error;
-    await loadProfile(data.user.id);
-  } catch(e){
-    err.textContent = e.message || 'Login failed';
-    err.classList.add('show');
-  } finally { loading(false); }
+  if(navigator.onLine){
+    try {
+      const {data, error} = await sb.auth.signInWithPassword({email, password: pass});
+      if(error) throw error;
+      await loadProfile(data.user.id);
+    } catch(e){
+      // Try offline cached session as fallback
+      const cached = getCachedSession();
+      if(cached && cached.email===email){
+        currentUser = cached;
+        toast('Logged in offline using cached session.','warn');
+        await launchApp();
+      } else {
+        err.textContent = navigator.onLine ? (e.message||'Login failed') : 'No network. Login requires internet at least once first.';
+        err.classList.add('show');
+      }
+    } finally { loading(false); }
+  } else {
+    // Offline login — use cached credentials
+    loading(false);
+    const cached = getCachedSession();
+    if(cached && cached.email===email){
+      // We can't verify password offline — just check email matches cache
+      currentUser = cached;
+      toast('📵 Offline mode — using cached session.','warn');
+      await launchApp();
+    } else {
+      err.textContent = 'No network. You need internet to log in for the first time on this device.';
+      err.classList.add('show');
+    }
+  }
 }
 
 async function loadProfile(userId){
@@ -812,6 +869,8 @@ async function launchApp(){
   document.getElementById('role-pill').textContent = currentUser.role.charAt(0).toUpperCase()+currentUser.role.slice(1);
   document.getElementById('role-pill').className = 'role-pill role-'+currentUser.role;
   document.getElementById('user-pill').textContent = currentUser.email;
+  // Cache session for offline login
+  cacheSession(currentUser);
 
   if(currentUser.role === 'master'){
     document.getElementById('view-master').style.display='block';
@@ -821,7 +880,8 @@ async function launchApp(){
     document.getElementById('view-master').style.display='none';
     document.getElementById('view-supervisor').style.display='block';
     document.getElementById('duty-date').value = new Date().toISOString().split('T')[0];
-    await Promise.all([loadShifts(), loadDepartments(), loadInventory()]);
+    // Load blocks so supervisor sees their assigned block and departments
+    await Promise.all([loadShifts(), loadDepartments(), loadInventory(), loadBlocksForSupervisor()]);
     populateShiftSelects();
     loadSupIssuance();
     loadSupDutyHistory();
@@ -830,11 +890,9 @@ async function launchApp(){
 
 async function loadAllMasterData(){
   loading(true);
-  await Promise.all([
-    loadInventory(), loadDepartments(), loadStaff(),
-    loadLocations(), loadShifts(), loadBlocks(),
-    loadUsers(), loadIssuance(), loadAssignments(), loadQRLogs()
-  ]);
+  // Load blocks and departments first so staff dropdowns are populated correctly
+  await Promise.all([loadBlocks(), loadDepartments(), loadUsers()]);
+  await Promise.all([loadInventory(), loadStaff(), loadLocations(), loadShifts(), loadIssuance(), loadAssignments()]);
   loading(false);
 }
 
@@ -861,7 +919,7 @@ function showSupMenu(name){
   ['issuance','duty','qr'].forEach(m=>document.getElementById('sup-'+m).style.display=m===name?'block':'none');
   document.querySelectorAll('.sup-menu-card').forEach((c,i)=>c.classList.toggle('active',['issuance','duty','qr'][i]===name));
   if(name==='duty') populateShiftSelects();
-  if(name==='qr'){ populateShiftSelects(); populatePhotoLocations(); updateOfflinePending(); updateOnlineStatus(); loadPhotoCheckins(); }
+  if(name==='qr'){ populateShiftSelects(); if(!blocksData.length){ loadBlocksForSupervisor().then(()=>{ populatePhotoLocations(); }); } else { populatePhotoLocations(); } updateOfflinePending(); updateOnlineStatus(); loadPhotoCheckins(); }
 }
 function esc(s){ return s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtDate(s){ if(!s)return ''; try{ return new Date(s).toLocaleDateString('en-GB'); }catch(e){return s;} }
@@ -1154,7 +1212,6 @@ function renderLocations(){
       <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${l.latitude||'—'}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${l.longitude||'—'}</td>
       <td>${block?`<span class="badge badge-blue">${esc(block.name)}</span>`:'—'}</td>
-      <td><button class="btn btn-outline btn-xs" onclick="downloadQR('${l.id}')">⬇ QR</button></td>
       <td><div class="flex gap-2">
         <button class="btn btn-outline btn-xs" onclick="openLocModal('${l.id}')">Edit</button>
         <button class="btn btn-danger btn-xs" onclick="deleteLoc('${l.id}')">Del</button>
@@ -1183,14 +1240,13 @@ async function saveLoc(){
   const longitude=parseFloat(document.getElementById('loc-lng').value)||0;
   const block_id=document.getElementById('loc-block').value||null;
   if(!name){ toast('Name required.','err'); return; }
-  const qr_text = `HK_LOC_${name.replace(/\s+/g,'_').toUpperCase()}_${latitude}_${longitude}`;
   loading(true);
   try {
     if(editingLoc){
-      const {error} = await sb.from('locations').update({name,latitude,longitude,block_id,qr_text}).eq('id',editingLoc.id);
+      const {error} = await sb.from('locations').update({name,latitude,longitude,block_id}).eq('id',editingLoc.id);
       if(error) throw error;
     } else {
-      const {error} = await sb.from('locations').insert({name,latitude,longitude,block_id,qr_text});
+      const {error} = await sb.from('locations').insert({name,latitude,longitude,block_id});
       if(error) throw error;
     }
     closeModal('modal-loc');
@@ -1215,12 +1271,6 @@ function getGPS(){
   },err=>toast('GPS error: '+err.message,'err'));
 }
 
-function downloadQR(locId){
-  const loc = locationsData.find(l=>l.id===locId);
-  if(!loc) return;
-  const qrText = loc.qr_text || `HK_LOC_${loc.id}`;
-  window.open(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrText)}`,'_blank');
-}
 
 async function saveGpsSettings(){
   const r = parseInt(document.getElementById('gps-radius').value);
@@ -1240,33 +1290,97 @@ async function loadBlocks(){
   if(error){ toast('Blocks error: '+error.message,'err'); return; }
   blocksData = data||[];
   renderBlocks();
+  // Re-render staff so block column dropdowns are populated
+  if(staffData.length) renderStaff(document.getElementById('staff-search')?.value||'');
+}
+
+async function loadBlocksForSupervisor(){
+  const {data,error} = await sb.from('blocks').select('*').order('name');
+  if(error){ console.warn('Blocks load error:',error.message); return; }
+  blocksData = data||[];
+  const myBlock = getMyBlock();
+  console.log('Supervisor block:', myBlock?.name || 'NOT FOUND', '| Email:', currentUser?.email);
+  populatePhotoLocations();
+  updateOfflinePending();
+  updateOnlineStatus();
 }
 
 function renderBlocks(){
   const tb = document.getElementById('blocks-table');
   if(!tb) return;
-  tb.innerHTML = !blocksData.length
-    ? '<tr><td colspan="3" class="text-center text-muted" style="padding:24px">No blocks yet.</td></tr>'
-    : blocksData.map(b=>`<tr><td><strong>${esc(b.name)}</strong></td><td>${esc(b.supervisor_email||'—')}</td><td><button class="btn btn-danger btn-xs" onclick="deleteBlock('${b.id}')">Delete</button></td></tr>`).join('');
+  if(!blocksData.length){
+    tb.innerHTML='<tr><td colspan="4" class="text-center text-muted" style="padding:24px">No blocks yet. Add one above.</td></tr>';
+  } else {
+    tb.innerHTML = blocksData.map(b=>{
+      const depts = (b.departments||[]).join(', ')||'—';
+      return `<tr>
+        <td><strong>${esc(b.name)}</strong></td>
+        <td>${esc(b.supervisor_email||'—')}</td>
+        <td class="text-sm text-muted" style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(depts)}">${esc(depts)}</td>
+        <td><div class="flex gap-2">
+          <button class="btn btn-outline btn-xs" onclick="openBlockModal('${b.id}')">✏️ Edit</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteBlock('${b.id}')">Delete</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+  // Populate supervisor select in modal
   const blockSup = document.getElementById('block-sup');
-  if(blockSup && usersData){
+  if(blockSup && usersData && usersData.length){
+    const cur = blockSup.value;
     blockSup.innerHTML='<option value="">None</option>'+usersData.filter(u=>u.role==='supervisor').map(u=>`<option value="${u.email}">${u.email}</option>`).join('');
+    if(cur) blockSup.value = cur;
   }
 }
 
-function openBlockModal(){ document.getElementById('block-name').value=''; renderBlocks(); openModal('modal-block'); }
+let editingBlock = null;
+
+function openBlockModal(id){
+  editingBlock = id ? blocksData.find(b=>b.id===id) : null;
+  document.getElementById('block-modal-title').textContent = editingBlock ? 'Edit Block' : 'Add Block';
+  document.getElementById('block-name').value = editingBlock?.name||'';
+  // Populate supervisor select
+  const supSel = document.getElementById('block-sup');
+  if(supSel && usersData){
+    supSel.innerHTML='<option value="">None</option>'+usersData.filter(u=>u.role==='supervisor').map(u=>`<option value="${u.email}">${u.email}</option>`).join('');
+    supSel.value = editingBlock?.supervisor_email||'';
+  }
+  // Populate department checkboxes
+  const assigned = editingBlock?.departments||[];
+  const deptList = document.getElementById('block-dept-list');
+  if(deptList){
+    deptList.innerHTML = departmentsData.length
+      ? departmentsData.map(d=>`
+          <div class="checkbox-row">
+            <input type="checkbox" id="bd-${d.id}" value="${esc(d.name)}" ${assigned.includes(d.name)?'checked':''}>
+            <label for="bd-${d.id}" style="cursor:pointer;font-size:13px">${esc(d.name)}</label>
+          </div>`).join('')
+      : '<div class="text-muted text-sm">No departments found.</div>';
+  }
+  openModal('modal-block');
+}
 
 async function saveBlock(){
   const name = document.getElementById('block-name').value.trim();
   const supervisor_email = document.getElementById('block-sup').value||null;
-  if(!name){ toast('Name required.','err'); return; }
+  const departments = [...document.querySelectorAll('#block-dept-list input[type=checkbox]:checked')].map(c=>c.value);
+  if(!name){ toast('Block name required.','err'); return; }
   loading(true);
   try {
-    const {error} = await sb.from('blocks').insert({name,supervisor_email});
-    if(error) throw error;
+    if(editingBlock){
+      const {error} = await sb.from('blocks').update({name,supervisor_email,departments}).eq('id',editingBlock.id);
+      if(error) throw error;
+      toast('Block updated!');
+    } else {
+      const {error} = await sb.from('blocks').insert({name,supervisor_email,departments});
+      if(error) throw error;
+      toast('Block added!');
+    }
     closeModal('modal-block');
+    editingBlock = null;
     await loadBlocks();
-    toast('Block added!');
+    // Re-render staff so block dropdowns refresh
+    renderStaff(document.getElementById('staff-search')?.value||'');
   } catch(e){ toast('Error: '+e.message,'err'); }
   finally { loading(false); }
 }
@@ -1314,7 +1428,7 @@ function renderShifts(){
 
 function populateShiftSelects(){
   const opts = shiftsData.map(s=>`<option value="${s.id}">${esc(s.name)} (${s.start_time}–${s.end_time})</option>`).join('');
-  ['duty-shift-sel','qr-scan-shift','qr-shift-filter'].forEach(id=>{
+  ['duty-shift-sel','qr-scan-shift'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.innerHTML='<option value="">Select shift…</option>'+opts;
   });
@@ -1462,104 +1576,6 @@ async function loadSupDutyHistory(){
 // ══════════════════════════════════════════════
 let scanStream=null, scanInterval=null, scanLock=false;
 
-async function startQRScan(){
-  const shiftId = document.getElementById('qr-scan-shift').value;
-  if(!shiftId){ toast('Select a shift first.','warn'); return; }
-  try {
-    scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    const vid = document.getElementById('qr-video');
-    vid.srcObject = scanStream;
-    await vid.play();
-    document.getElementById('qr-camera-wrap').style.display='block';
-    document.getElementById('qr-idle').style.display='none';
-    scanLock=false;
-    const canvas = document.createElement('canvas');
-    scanInterval = setInterval(()=>{
-      if(!vid.videoWidth||scanLock) return;
-      canvas.width=vid.videoWidth; canvas.height=vid.videoHeight;
-      const ctx=canvas.getContext('2d'); ctx.drawImage(vid,0,0);
-      const img=ctx.getImageData(0,0,canvas.width,canvas.height);
-      const code=jsQR(img.data,img.width,img.height);
-      if(code){ scanLock=true; processQRScan(code.data,shiftId); }
-    },200);
-  } catch(e){
-    const msg=document.getElementById('qr-msg');
-    msg.style.display='block'; msg.className='alert alert-err mb-4';
-    msg.textContent='Camera error: '+e.message;
-  }
-}
-
-function stopQRScan(){
-  clearInterval(scanInterval);
-  try{if(scanStream)scanStream.getTracks().forEach(t=>t.stop());}catch(e){}
-  scanStream=null;
-  document.getElementById('qr-camera-wrap').style.display='none';
-  document.getElementById('qr-idle').style.display='block';
-}
-
-async function processQRScan(qrData, shiftId){
-  stopQRScan();
-  const loc = locationsData.find(l=>l.qr_text===qrData||qrData.includes(l.id));
-  const shift = shiftsData.find(s=>s.id===shiftId);
-  const msg = document.getElementById('qr-msg');
-  msg.style.display='block';
-  if(!loc){ msg.className='alert alert-err mb-4'; msg.innerHTML='❌ Unknown QR. Location not registered.'; setTimeout(()=>scanLock=false,2000); return; }
-
-  const recordScan = async (lat,lng,gps_status)=>{
-    try {
-      await sb.from('qr_attendance').insert({
-        location_id:loc.id, location_name:loc.name,
-        shift_id:shiftId, shift_name:shift?.name,
-        supervisor_id:currentUser.id, supervisor_email:currentUser.email,
-        latitude:lat, longitude:lng, gps_status,
-        scanned_at:new Date().toISOString()
-      });
-    } catch(e){}
-    renderQRScanLog();
-  };
-
-  if(navigator.geolocation && loc.latitude && loc.longitude){
-    navigator.geolocation.getCurrentPosition(async pos=>{
-      const dist=getDistance(pos.coords.latitude,pos.coords.longitude,loc.latitude,loc.longitude);
-      const radius=150;
-      if(dist>radius){
-        msg.className='alert alert-err mb-4';
-        msg.innerHTML=`❌ Too far (${Math.round(dist)}m). Must be within ${radius}m of ${esc(loc.name)}.`;
-        await recordScan(pos.coords.latitude,pos.coords.longitude,'too_far');
-      } else {
-        msg.className='alert alert-ok mb-4';
-        msg.innerHTML=`✅ Checked in at <strong>${esc(loc.name)}</strong><br>Shift: ${esc(shift?.name||'')}`;
-        await recordScan(pos.coords.latitude,pos.coords.longitude,'success');
-      }
-      setTimeout(()=>scanLock=false,3000);
-    },async ()=>{
-      msg.className='alert alert-warn mb-4';
-      msg.innerHTML=`⚠️ Checked in (no GPS) at <strong>${esc(loc.name)}</strong>`;
-      await recordScan(null,null,'no_gps');
-      setTimeout(()=>scanLock=false,2000);
-    });
-  } else {
-    msg.className='alert alert-ok mb-4';
-    msg.innerHTML=`✅ Checked in at <strong>${esc(loc.name)}</strong>`;
-    await recordScan(null,null,'success');
-    setTimeout(()=>scanLock=false,2000);
-  }
-}
-
-async function renderQRScanLog(){
-  const {data} = await sb.from('qr_attendance').select('*').eq('supervisor_id',currentUser.id).order('scanned_at',{ascending:false}).limit(5);
-  const el = document.getElementById('qr-scan-log');
-  if(!data||!data.length){ el.innerHTML=''; return; }
-  el.innerHTML = '<div class="font-bold text-sm mb-2">Recent Scans</div>'+data.map(l=>`
-    <div class="card mb-2" style="padding:12px;border-radius:10px">
-      <div class="flex justify-between items-center">
-        <div><strong>${esc(l.location_name)}</strong><div class="text-xs text-muted">${fmtDateTime(l.scanned_at)}</div></div>
-        <span class="badge ${l.gps_status==='success'?'badge-green':l.gps_status==='too_far'?'badge-red':'badge-amber'}">${l.gps_status}</span>
-      </div>
-    </div>
-  `).join('');
-}
-
 function getDistance(lat1,lon1,lat2,lon2){
   const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
   const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
@@ -1567,84 +1583,6 @@ function getDistance(lat1,lon1,lat2,lon2){
 }
 
 // QR Verifier
-let verifyStream=null, verifyInterval=null;
-function openQRVerifier(){ document.getElementById('verify-result').innerHTML=''; openModal('modal-qrverify'); startVerifierCamera(); }
-async function startVerifierCamera(){
-  try {
-    verifyStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    const vid = document.getElementById('verify-video');
-    vid.srcObject=verifyStream; await vid.play();
-    const canvas=document.createElement('canvas');
-    verifyInterval=setInterval(()=>{
-      if(!vid.videoWidth) return;
-      canvas.width=vid.videoWidth; canvas.height=vid.videoHeight;
-      const ctx=canvas.getContext('2d'); ctx.drawImage(vid,0,0);
-      const code=jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data,canvas.width,canvas.height);
-      if(code){
-        clearInterval(verifyInterval); stopStream(verifyStream);
-        const loc=locationsData.find(l=>l.qr_text===code.data||code.data.includes(l.id));
-        document.getElementById('verify-result').innerHTML = loc
-          ? `<div class="alert alert-ok">✅ Valid QR — <strong>${esc(loc.name)}</strong><br>Lat: ${loc.latitude} | Lng: ${loc.longitude}</div>`
-          : `<div class="alert alert-warn">⚠️ QR not registered: ${esc(code.data)}</div>`;
-      }
-    },200);
-  } catch(e){ document.getElementById('verify-result').innerHTML=`<div class="alert alert-err">Camera error: ${e.message}</div>`; }
-}
-function stopQRVerifier(){ clearInterval(verifyInterval); stopStream(verifyStream); verifyStream=null; closeModal('modal-qrverify'); }
-function stopStream(s){ try{if(s)s.getTracks().forEach(t=>t.stop());}catch(e){} }
-
-// ══════════════════════════════════════════════
-// QR LOGS (MASTER)
-// ══════════════════════════════════════════════
-let qrLogsData = [];
-
-async function loadQRLogs(){
-  const from=document.getElementById('qr-from')?.value;
-  const to=document.getElementById('qr-to')?.value;
-  const sup=document.getElementById('qr-sup')?.value;
-  const shift=document.getElementById('qr-shift-filter')?.value;
-
-  let query = sb.from('qr_attendance').select('*').order('scanned_at',{ascending:false}).limit(500);
-  if(from) query=query.gte('scanned_at',from);
-  if(to) query=query.lte('scanned_at',to+'T23:59:59');
-  if(sup) query=query.eq('supervisor_email',sup);
-  if(shift) query=query.eq('shift_name',shift);
-
-  const {data,error}=await query;
-  if(error){ toast('QR logs error: '+error.message,'err'); return; }
-  qrLogsData=data||[];
-
-  const tb=document.getElementById('qr-logs-table');
-  if(!tb) return;
-  if(!qrLogsData.length){ tb.innerHTML='<tr><td colspan="5" class="text-center text-muted" style="padding:32px">No scan records.</td></tr>'; return; }
-  tb.innerHTML = qrLogsData.map(l=>`
-    <tr>
-      <td class="text-sm">${fmtDateTime(l.scanned_at)}</td>
-      <td>${esc(l.supervisor_email||'—')}</td>
-      <td>${esc(l.location_name||'—')}</td>
-      <td>${esc(l.shift_name||'—')}</td>
-      <td><span class="badge ${l.gps_status==='success'?'badge-green':l.gps_status==='too_far'?'badge-red':'badge-amber'}">${l.gps_status||'—'}</span></td>
-    </tr>
-  `).join('');
-
-  // Populate supervisor filter
-  const sups=[...new Set(qrLogsData.map(l=>l.supervisor_email).filter(Boolean))];
-  const supSel=document.getElementById('qr-sup');
-  if(supSel){ const cur=supSel.value; supSel.innerHTML='<option value="">All</option>'+sups.map(s=>`<option value="${s}">${s}</option>`).join(''); supSel.value=cur; }
-}
-
-function clearQRFilters(){
-  ['qr-from','qr-to','qr-sup','qr-shift-filter'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
-  loadQRLogs();
-}
-
-function exportQRLogs(){
-  if(!qrLogsData.length){ toast('No data to export.','warn'); return; }
-  const H=['Date/Time','Supervisor','Location','Shift','GPS Status','Latitude','Longitude'];
-  const rows=qrLogsData.map(l=>[fmtDateTime(l.scanned_at),l.supervisor_email||'',l.location_name||'',l.shift_name||'',l.gps_status||'',l.latitude||'',l.longitude||''].map(v=>`"${String(v).replace(/"/g,'""')}"`));
-  downloadCSV('\uFEFF'+[H.map(h=>`"${h}"`).join(','),...rows.map(r=>r.join(','))].join('\r\n'),'qr_attendance_logs.csv');
-}
-
 // ══════════════════════════════════════════════
 // ISSUANCE
 // ══════════════════════════════════════════════
@@ -2118,15 +2056,26 @@ function saveOfflineQueue(q) { localStorage.setItem(OFFLINE_KEY, JSON.stringify(
 
 // Populate check-in UI for supervisor
 function populatePhotoLocations() {
-  // Show my block
   const myBlock = getMyBlock();
   const blockDisp = document.getElementById('my-block-display');
-  if(blockDisp) blockDisp.textContent = myBlock ? myBlock.name : 'No block assigned — contact master';
-  // Populate departments from my block
+  if(blockDisp){
+    if(myBlock){
+      blockDisp.textContent = myBlock.name;
+      blockDisp.style.color = '#1e40af';
+      blockDisp.style.fontWeight = '700';
+    } else {
+      blockDisp.textContent = '⚠️ No block assigned — ask master to assign you a block';
+      blockDisp.style.color = '#dc2626';
+    }
+  }
+  // Populate departments: use block's assigned departments, fallback to all
   const deptSel = document.getElementById('ci-department');
   if(deptSel){
-    const depts = myBlock?.departments||departmentsData.map(d=>d.name);
-    deptSel.innerHTML = '<option value="">Select department…</option>' + depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+    const depts = (myBlock?.departments && myBlock.departments.length > 0)
+      ? myBlock.departments
+      : departmentsData.map(d=>d.name);
+    deptSel.innerHTML = '<option value="">Select department…</option>' +
+      depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
   }
 }
 
@@ -2525,6 +2474,259 @@ async function loadPhotoCheckins() {
       <td><button class="btn btn-outline btn-xs" onclick="viewPhoto('${r.id}')">👁 View</button></td>
     </tr>
   `).join('');
+}
+
+
+// ══════════════════════════════════════════════
+// PHOTO REPORTS (MASTER)
+// ══════════════════════════════════════════════
+let photoReportData = [];
+
+async function loadPhotoReport(){
+  const from = document.getElementById('pr-from').value;
+  const to = document.getElementById('pr-to').value;
+  const supervisor = document.getElementById('pr-supervisor').value;
+  const block = document.getElementById('pr-block').value;
+  const dept = document.getElementById('pr-dept-filter').value;
+
+  loading(true);
+  let query = sb.from('photo_checkins').select('*').order('checkin_at',{ascending:false}).limit(500);
+  if(from) query = query.gte('checkin_at', from);
+  if(to) query = query.lte('checkin_at', to+'T23:59:59');
+  if(supervisor) query = query.eq('supervisor_email', supervisor);
+  if(block) query = query.eq('block_name', block);
+  if(dept) query = query.eq('department', dept);
+
+  const {data,error} = await query;
+  loading(false);
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  photoReportData = data||[];
+
+  // Populate filter selects
+  const sups = [...new Set(photoReportData.map(r=>r.supervisor_email).filter(Boolean))];
+  const supSel = document.getElementById('pr-supervisor');
+  const curSup = supSel.value;
+  supSel.innerHTML = '<option value="">All supervisors</option>'+sups.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  if(curSup) supSel.value = curSup;
+
+  const blks = [...new Set(photoReportData.map(r=>r.block_name).filter(Boolean))];
+  const blkSel = document.getElementById('pr-block');
+  const curBlk = blkSel.value;
+  blkSel.innerHTML = '<option value="">All blocks</option>'+blks.map(b=>`<option value="${esc(b)}">${esc(b)}</option>`).join('');
+  if(curBlk) blkSel.value = curBlk;
+
+  const depts = [...new Set(photoReportData.map(r=>r.department).filter(Boolean))];
+  const deptSel = document.getElementById('pr-dept-filter');
+  const curDept = deptSel.value;
+  deptSel.innerHTML = '<option value="">All departments</option>'+depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  if(curDept) deptSel.value = curDept;
+
+  // Summary
+  const summary = document.getElementById('pr-summary');
+  summary.style.display = 'block';
+  summary.innerHTML = `<div class="stats-row" style="margin-bottom:0">
+    <div class="stat-card stat-blue"><div class="stat-lbl">Total Photos</div><div class="stat-val">${photoReportData.length}</div></div>
+    <div class="stat-card stat-green"><div class="stat-lbl">Supervisors</div><div class="stat-val">${sups.length}</div></div>
+    <div class="stat-card stat-purple"><div class="stat-lbl">Departments</div><div class="stat-val">${depts.length}</div></div>
+    <div class="stat-card stat-amber"><div class="stat-lbl">With GPS</div><div class="stat-val">${photoReportData.filter(r=>r.latitude).length}</div></div>
+  </div>`;
+
+  const tb = document.getElementById('photo-report-table');
+  if(!photoReportData.length){
+    tb.innerHTML='<tr><td colspan="8" class="text-center text-muted" style="padding:32px">No photo check-ins found for selected filters.</td></tr>';
+    return;
+  }
+  tb.innerHTML = photoReportData.map(r=>`
+    <tr>
+      <td class="text-sm">${fmtDateTime(r.checkin_at)}</td>
+      <td class="text-sm">${esc(r.supervisor_email||'—')}</td>
+      <td>${esc(r.block_name||'—')}</td>
+      <td>${esc(r.department||'—')}</td>
+      <td>${esc(r.spot_name||'—')}</td>
+      <td class="text-sm">${esc(r.remarks||'—')}</td>
+      <td class="text-sm" style="font-family:monospace">${r.latitude?`${r.latitude},${r.longitude}`:'—'}</td>
+      <td><button class="btn btn-outline btn-xs" onclick="viewPhoto('${r.id}')">👁 View</button></td>
+    </tr>
+  `).join('');
+}
+
+function clearPhotoReportFilters(){
+  ['pr-from','pr-to','pr-supervisor','pr-block','pr-dept-filter'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('pr-summary').style.display='none';
+  document.getElementById('photo-report-table').innerHTML='<tr><td colspan="8" class="text-center text-muted" style="padding:32px">Use filters above to load photo reports.</td></tr>';
+}
+
+function exportPhotoReport(){
+  if(!photoReportData.length){ toast('No data to export.','warn'); return; }
+  const H=['Date/Time','Supervisor','Block','Department','Spot','Remarks','Latitude','Longitude','GPS Accuracy'];
+  const rows = photoReportData.map(r=>[fmtDateTime(r.checkin_at),r.supervisor_email||'',r.block_name||'',r.department||'',r.spot_name||'',r.remarks||'',r.latitude||'',r.longitude||'',r.gps_accuracy||''].map(v=>`"${String(v).replace(/"/g,'""')}"`));
+  downloadCSV('\uFEFF'+[H.map(h=>`"${h}"`).join(','),...rows.map(r=>r.join(','))].join('\r\n'),'photo_reports.csv');
+  toast('Photo report exported!');
+}
+
+// Populate photo report filters on tab switch
+const _origSwitchTab = switchTab;
+function switchTab(btn, group){
+  _origSwitchTab(btn, group);
+  if(btn.dataset.tab==='photoreport') initPhotoReportFilters();
+  if(btn.dataset.tab==='duty') initDutyReportFilters();
+}
+
+function initPhotoReportFilters(){
+  // Set default date range (last 30 days)
+  const to = new Date(); const from = new Date(to-30*86400000);
+  if(!document.getElementById('pr-from').value) document.getElementById('pr-from').value = from.toISOString().split('T')[0];
+  if(!document.getElementById('pr-to').value) document.getElementById('pr-to').value = to.toISOString().split('T')[0];
+  // Populate block filter from blocksData
+  const blkSel = document.getElementById('pr-block');
+  if(blkSel) blkSel.innerHTML = '<option value="">All blocks</option>'+blocksData.map(b=>`<option value="${esc(b.name)}">${esc(b.name)}</option>`).join('');
+  // Populate dept filter
+  const deptSel = document.getElementById('pr-dept-filter');
+  if(deptSel) deptSel.innerHTML = '<option value="">All departments</option>'+departmentsData.map(d=>`<option value="${esc(d.name)}">${esc(d.name)}</option>`).join('');
+  // Populate supervisor filter
+  const supSel = document.getElementById('pr-supervisor');
+  if(supSel && usersData) supSel.innerHTML = '<option value="">All supervisors</option>'+usersData.filter(u=>u.role==='supervisor').map(u=>`<option value="${u.email}">${u.email}</option>`).join('');
+}
+
+// ══════════════════════════════════════════════
+// DUTY CHART REPORT (MASTER) — with staff summary
+// ══════════════════════════════════════════════
+let dutyReportData = [];
+
+function initDutyReportFilters(){
+  const to = new Date(); const from = new Date(to-30*86400000);
+  if(!document.getElementById('dc-from').value) document.getElementById('dc-from').value = from.toISOString().split('T')[0];
+  if(!document.getElementById('dc-to').value) document.getElementById('dc-to').value = to.toISOString().split('T')[0];
+  // Populate shift filter
+  const shiftSel = document.getElementById('dc-shift');
+  if(shiftSel) shiftSel.innerHTML = '<option value="">All shifts</option>'+shiftsData.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  // Populate supervisor filter
+  const supSel = document.getElementById('dc-supervisor');
+  if(supSel && usersData) supSel.innerHTML = '<option value="">All supervisors</option>'+usersData.filter(u=>u.role==='supervisor').map(u=>`<option value="${u.email}">${u.email}</option>`).join('');
+}
+
+async function loadDutyReport(){
+  const from = document.getElementById('dc-from').value;
+  const to = document.getElementById('dc-to').value;
+  const shiftId = document.getElementById('dc-shift').value;
+  const supervisor = document.getElementById('dc-supervisor').value;
+  if(!from||!to){ toast('Select date range.','warn'); return; }
+
+  loading(true);
+  let query = sb.from('daily_assignments').select('*').order('submitted_at',{ascending:false});
+  if(from) query = query.gte('date', from);
+  if(to) query = query.lte('date', to);
+  if(shiftId) query = query.eq('shift_id', shiftId);
+  if(supervisor) query = query.eq('supervisor_email', supervisor);
+
+  const {data,error} = await query;
+  loading(false);
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  dutyReportData = data||[];
+
+  // ── Summary stats ──
+  const totalPresent = dutyReportData.reduce((s,a)=>s+(a.present_count||0),0);
+  const totalAbsent = dutyReportData.reduce((s,a)=>s+((a.total||0)-(a.present_count||0)),0);
+  const summary = document.getElementById('dc-summary');
+  summary.style.display='block';
+  summary.innerHTML=`<div class="stats-row" style="margin-bottom:0">
+    <div class="stat-card stat-blue"><div class="stat-lbl">Submissions</div><div class="stat-val">${dutyReportData.length}</div></div>
+    <div class="stat-card stat-green"><div class="stat-lbl">Total Present</div><div class="stat-val">${totalPresent}</div></div>
+    <div class="stat-card stat-red"><div class="stat-lbl">Total Absent</div><div class="stat-val">${totalAbsent}</div></div>
+    <div class="stat-card stat-amber"><div class="stat-lbl">Attendance %</div><div class="stat-val">${totalPresent+totalAbsent>0?Math.round(totalPresent/(totalPresent+totalAbsent)*100):0}%</div></div>
+  </div>`;
+
+  // ── Staff duty summary — aggregate across all submissions ──
+  const staffMap = {}; // attendance_id -> {name, att_id, dept, duties:[], spots:Set}
+  dutyReportData.forEach(a=>{
+    const date = a.date;
+    const shiftName = a.shift_name||'';
+    (a.attendance_records||[]).forEach(rec=>{
+      const key = rec.attendance_id||rec.staff_id;
+      if(!staffMap[key]) staffMap[key] = {name:rec.name||'', att_id:rec.attendance_id||'', dept:rec.department||'', duties:[], spots:new Set()};
+      staffMap[key].duties.push({date, shift:shiftName, present:rec.present});
+      staffMap[key].spots.add(`${date} ${shiftName}`);
+    });
+  });
+
+  const staffRows = Object.values(staffMap).sort((a,b)=>a.dept.localeCompare(b.dept)||a.name.localeCompare(b.name));
+  const staffSummaryEl = document.getElementById('dc-staff-summary');
+  const staffTb = document.getElementById('dc-staff-table');
+  if(staffRows.length){
+    staffSummaryEl.style.display='block';
+    staffTb.innerHTML = staffRows.map(s=>{
+      const present = s.duties.filter(d=>d.present).length;
+      const absent = s.duties.filter(d=>!d.present).length;
+      const spotsList = [...s.spots].sort().join(', ');
+      return `<tr>
+        <td><strong>${esc(s.name)}</strong></td>
+        <td><span class="badge badge-gray">${esc(s.att_id)}</span></td>
+        <td class="text-sm">${esc(s.dept)}</td>
+        <td><strong>${s.duties.length}</strong></td>
+        <td><span class="badge badge-green">${present}</span></td>
+        <td><span class="badge badge-red">${absent}</span></td>
+        <td class="text-sm text-muted" style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(spotsList)}">${esc(spotsList)||'—'}</td>
+      </tr>`;
+    }).join('');
+  } else {
+    staffSummaryEl.style.display='none';
+  }
+
+  // ── Submissions table ──
+  const tb = document.getElementById('assignments-table');
+  if(!dutyReportData.length){
+    tb.innerHTML='<tr><td colspan="7" class="text-center text-muted" style="padding:32px">No duty chart submissions found for this date range.</td></tr>';
+    return;
+  }
+  tb.innerHTML = dutyReportData.map(a=>{
+    const absent = (a.total||0)-(a.present_count||0);
+    return `<tr>
+      <td>${fmtDate(a.date)}</td>
+      <td>${esc(a.shift_name||'—')}</td>
+      <td class="text-sm">${esc(a.supervisor_email||'—')}</td>
+      <td><span class="badge badge-green">${a.present_count||0}</span></td>
+      <td><span class="badge badge-red">${absent}</span></td>
+      <td>${a.total||0}</td>
+      <td class="text-sm text-muted">${fmtDateTime(a.submitted_at)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function clearDutyFilters(){
+  ['dc-from','dc-to','dc-shift','dc-supervisor'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('dc-summary').style.display='none';
+  document.getElementById('dc-staff-summary').style.display='none';
+  document.getElementById('assignments-table').innerHTML='<tr><td colspan="7" class="text-center text-muted" style="padding:32px">Select date range and click Fetch Report.</td></tr>';
+}
+
+function exportDutyReport(){
+  if(!dutyReportData.length){ toast('No data to export.','warn'); return; }
+  const H=['Date','Shift','Supervisor','Present','Absent','Total','Submitted At'];
+  const rows = dutyReportData.map(a=>{
+    const absent=(a.total||0)-(a.present_count||0);
+    return [fmtDate(a.date),a.shift_name||'',a.supervisor_email||'',a.present_count||0,absent,a.total||0,fmtDateTime(a.submitted_at)].map(v=>`"${String(v).replace(/"/g,'""')}"`);
+  });
+  downloadCSV('\uFEFF'+[H.map(h=>`"${h}"`).join(','),...rows.map(r=>r.join(','))].join('\r\n'),'duty_report.csv');
+  toast('Duty report exported!');
+}
+
+// ══════════════════════════════════════════════
+// OFFLINE LOGIN + SUBMIT SUPPORT
+// ══════════════════════════════════════════════
+const OFFLINE_SESSION_KEY = 'hk_offline_session';
+
+// Cache session for offline login
+function cacheSession(user){
+  localStorage.setItem(OFFLINE_SESSION_KEY, JSON.stringify({
+    id: user.id, email: user.email, role: user.role,
+    cached_at: new Date().toISOString()
+  }));
+}
+
+function getCachedSession(){
+  try { return JSON.parse(localStorage.getItem(OFFLINE_SESSION_KEY)); } catch(e){ return null; }
 }
 
 </script>
