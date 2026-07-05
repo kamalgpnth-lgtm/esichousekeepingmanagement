@@ -737,13 +737,17 @@ function getConfig(){
 }
 
 async function initSupabase(){
-  // Hardcoded credentials — no setup screen needed
   const url = "https://zqnligirlvmyhudpxrxu.supabase.co";
   const key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbmxpZ2lybHZteWh1ZHB4cnh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDYxODIsImV4cCI6MjA5NDEyMjE4Mn0.t_WtEg845ecE1jbg9xRKTWvOw05ays7N4XlwdufNPRo";
   try {
-    sb = supabase.createClient(url, key);
+    sb = window.supabase.createClient(url, key);
+    window.sb = sb; // make globally accessible
+    console.log('Supabase initialized');
     return true;
-  } catch(e) { return false; }
+  } catch(e) {
+    console.error('Supabase init failed:', e.message);
+    return false;
+  }
 }
 
 async function saveSetup(){
@@ -786,14 +790,21 @@ function loading(show){ document.getElementById('loading-overlay').classList.tog
 // AUTH
 // ══════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async ()=>{
-  const ok = await initSupabase();
-  if(!ok){ showScreen('s-setup'); return; }
+  // Always init Supabase first with hardcoded credentials
+  await initSupabase();
 
-  const {data:{session}} = await sb.auth.getSession();
-  if(session){
-    await loadProfile(session.user.id);
-  } else {
-    showScreen('s-login');
+  // Show login screen immediately so user can type
+  showScreen('s-login');
+
+  // Check for existing session in background
+  try {
+    const {data:{session}} = await sb.auth.getSession();
+    if(session){
+      await loadProfile(session.user.id);
+    }
+  } catch(e){
+    // No session — stay on login screen
+    console.log('No active session:', e.message);
   }
 });
 
@@ -808,6 +819,7 @@ async function doLogin(){
   err.classList.remove('show');
   if(!email||!pass){ err.textContent='Enter email and password.'; err.classList.add('show'); return; }
 
+  if(!sb){ await initSupabase(); }
   loading(true);
   if(navigator.onLine){
     try {
