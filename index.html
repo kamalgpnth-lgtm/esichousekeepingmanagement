@@ -819,39 +819,29 @@ async function doLogin(){
   err.classList.remove('show');
   if(!email||!pass){ err.textContent='Enter email and password.'; err.classList.add('show'); return; }
 
+  // Ensure Supabase is ready
   if(!sb){ await initSupabase(); }
+  if(!sb){ err.textContent='App not initialized. Please refresh.'; err.classList.add('show'); return; }
+
   loading(true);
-  if(navigator.onLine){
-    try {
-      const {data, error} = await sb.auth.signInWithPassword({email, password: pass});
-      if(error) throw error;
-      await loadProfile(data.user.id);
-    } catch(e){
-      // Try offline cached session as fallback
-      const cached = getCachedSession();
-      if(cached && cached.email===email){
-        currentUser = cached;
-        toast('Logged in offline using cached session.','warn');
-        await launchApp();
-      } else {
-        err.textContent = navigator.onLine ? (e.message||'Login failed') : 'No network. Login requires internet at least once first.';
-        err.classList.add('show');
-      }
-    } finally { loading(false); }
-  } else {
-    // Offline login — use cached credentials
+  try {
+    const {data, error} = await sb.auth.signInWithPassword({email, password: pass});
+    if(error) throw error;
+    if(!data?.user) throw new Error('No user returned from login.');
+    await loadProfile(data.user.id);
+  } catch(e){
     loading(false);
+    // Offline fallback
     const cached = getCachedSession();
-    if(cached && cached.email===email){
-      // We can't verify password offline — just check email matches cache
+    if(cached && cached.email.toLowerCase()===email.toLowerCase()){
       currentUser = cached;
-      toast('📵 Offline mode — using cached session.','warn');
+      toast('📵 Using cached session (offline).','warn');
       await launchApp();
-    } else {
-      err.textContent = 'No network. You need internet to log in for the first time on this device.';
-      err.classList.add('show');
+      return;
     }
-  }
+    err.textContent = e.message || 'Login failed. Check email and password.';
+    err.classList.add('show');
+  } finally { loading(false); }
 }
 
 async function loadProfile(userId){
