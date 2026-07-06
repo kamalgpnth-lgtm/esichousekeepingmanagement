@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Test</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body{font-family:sans-serif;max-width:500px;margin:40px auto;padding:20px}
+input{width:100%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:6px;font-size:16px;box-sizing:border-box}
+button{width:100%;padding:12px;background:#1e40af;color:#fff;border:none;border-radius:6px;font-size:16px;cursor:pointer;margin-top:8px}
+.log{background:#f1f5f9;border-radius:8px;padding:12px;margin-top:16px;font-family:monospace;font-size:13px;white-space:pre-wrap;min-height:100px;border:1px solid #e2e8f0}
+.ok{color:green}.err{color:red}.info{color:#1e40af}
+</style>
+</head>
+<body>
+<h2>🔍 Supabase Login Diagnostics</h2>
+<input type="email" id="email" placeholder="Email" value="admin@esickknagar.in">
+<input type="password" id="pass" placeholder="Password" value="Esic@123">
+<button onclick="runTest()">Test Login</button>
+<div class="log" id="log">Click "Test Login" to diagnose...</div>
+
+<script>
+const SUPABASE_URL = "https://zqnligirlvmyhudpxrxu.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbmxpZ2lybHZteWh1ZHB4cnh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDYxODIsImV4cCI6MjA5NDEyMjE4Mn0.t_WtEg845ecE1jbg9xRKTWvOw05ays7N4XlwdufNPRo";
+
+function log(msg, type='info'){
+  const el = document.getElementById('log');
+  const time = new Date().toLocaleTimeString();
+  el.innerHTML += '<span class="'+type+'">['+time+'] '+msg+'</span>\n';
+}
+
+async function runTest(){
+  document.getElementById('log').innerHTML = '';
+  const email = document.getElementById('email').value.trim();
+  const pass = document.getElementById('pass').value;
+
+  log('Step 1: Initializing Supabase...');
+  let sb;
+  try {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    log('Supabase client created OK', 'ok');
+  } catch(e) {
+    log('FAILED to create client: ' + e.message, 'err'); return;
+  }
+
+  log('Step 2: Testing connectivity...');
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/', { headers: { 'apikey': SUPABASE_KEY } });
+    log('Supabase reachable — status: ' + res.status, 'ok');
+  } catch(e) {
+    log('Cannot reach Supabase: ' + e.message, 'err'); return;
+  }
+
+  log('Step 3: Attempting login with ' + email + '...');
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if(error) {
+      log('LOGIN FAILED: ' + error.message, 'err');
+      log('Error code: ' + (error.code||'none'), 'err');
+      log('Error status: ' + (error.status||'none'), 'err');
+    } else {
+      log('LOGIN SUCCESS!', 'ok');
+      log('User ID: ' + data.user.id, 'ok');
+      log('Email confirmed at: ' + (data.user.email_confirmed_at||'NOT CONFIRMED'), data.user.email_confirmed_at?'ok':'err');
+
+      log('Step 4: Checking users table...');
+      const { data: profile, error: pe } = await sb.from('users').select('*').eq('id', data.user.id).single();
+      if(pe) {
+        log('Profile error: ' + pe.message, 'err');
+        log('Run this SQL: INSERT INTO public.users(id,email,role,created_at) SELECT id,email,\'master\',now() FROM auth.users WHERE email=\''+email+'\' ON CONFLICT(id) DO NOTHING;', 'info');
+      } else {
+        log('Profile OK — role: ' + profile.role, 'ok');
+      }
+    }
+  } catch(e) {
+    log('Exception: ' + e.message, 'err');
+  }
+}
+</script>
+</body>
+</html>
